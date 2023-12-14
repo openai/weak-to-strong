@@ -1,0 +1,9 @@
+ci:
+    autoupdate_schedule: 'weekly'
+    autofix_prs: true
+
+repos:
+-   repo: https://github.com/psf/black
+    rev: 23.11.0
+    hooks:
+      - id: black-jupyter

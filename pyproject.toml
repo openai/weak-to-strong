@@ -26,3 +26,6 @@ fire = "~0.4"
 accelerate = "~0.25"
 transformers-stream-generator = "~0.0.4"
 torch_optimizer = "~0.3"
+
+[tool.black]
+line-length = 100
