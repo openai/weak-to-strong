@@ -1,8 +1,8 @@
 # A Simple Weak-to-Strong Experiment on ImageNet
 
-We provide code for a simple weak-to-strong experiment on ImageNet. 
+We provide code for a simple weak-to-strong experiment on ImageNet.
 We generate the weak labels using an [AlexNet](https://pytorch.org/vision/main/models/generated/torchvision.models.alexnet.html) model pretrained on ImageNet and we use linear probes on top of [DINO](https://github.com/facebookresearch/dino) models
-as a strong student. 
+as a strong student.
 
 The full training command:
 
