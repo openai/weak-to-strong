@@ -112,11 +112,7 @@ MODELS_DICT: Dict[str, ModelConfig] = {
 }
 
 
-loss_dict = {
-    "logconf": logconf_loss_fn(),
-    "product": product_loss_fn(),
-    "xent": xent_loss(),
-}
+loss_dict = {"logconf": logconf_loss_fn(), "product": product_loss_fn(), "xent": xent_loss()}
 
 VALID_LOSSES: List[str] = list(loss_dict.keys())
 
@@ -326,10 +322,7 @@ def main(
 
     weak_acc = np.mean([x["acc"] for x in weak_test_results])
     strong_acc = np.mean([x["acc"] for x in strong_test_results])
-    res_dict = {
-        "weak_acc": weak_acc,
-        "strong_acc": strong_acc,
-    }
+    res_dict = {"weak_acc": weak_acc, "strong_acc": strong_acc}
     print("weak acc:", weak_acc)
     print("strong acc:", strong_acc)
     for tloss, transfer_test_results in all_transfer_test_results.items():
@@ -344,10 +337,7 @@ def main(
         ),
         "w",
     ) as f:
-        json.dump(
-            res_dict,
-            f,
-        )
+        json.dump(res_dict, f)
 
 
 # python train_weak_to_strong.py --batch_size 32 --max_ctx 512 --ds_name "sciq" --transfer_loss "logconf" --n_docs 1000 --n_test_docs 100 --weak_model_size "gpt2-medium" --strong_model_size "gpt2-large" --seed 42

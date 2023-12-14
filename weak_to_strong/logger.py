@@ -15,10 +15,7 @@ class WandbLogger:
 
     log_path = None
 
-    def __init__(
-        self,
-        **kwargs,
-    ):
+    def __init__(self, **kwargs):
         project = os.environ.get("WANDB_PROJECT")
         self.use_wandb = project is not None
         if self.use_wandb:

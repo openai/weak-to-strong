@@ -110,10 +110,7 @@ def train_model(
                 break
             input_ids = (
                 torch.nn.utils.rnn.pad_sequence([torch.tensor(ex["input_ids"]) for ex in mbatch])
-                .transpose(
-                    0,
-                    1,
-                )
+                .transpose(0, 1)
                 .to(io_device)
             )
             labels = torch.tensor([ex["soft_label"] for ex in mbatch]).to(io_device)
