@@ -3,10 +3,8 @@ from dataclasses import dataclass
 from random import Random
 from typing import Any, Callable, Optional
 
-import torch
 from datasets import Dataset as HfDataset
 from datasets import load_dataset as hf_load_dataset
-from transformers import GPT2Tokenizer
 
 
 @dataclass
