@@ -16,10 +16,10 @@ These instructions will get you a copy of the project up and running on your loc
 
 #### Installation
 
-You need to have Python installed on your machine. The project also has some dependencies, which can be installed with pip:
+You need to have Python installed on your machine. The project uses `pyproject.toml` to manage dependencies. To install the dependencies, you can use a package manager like `pip`:
 
 ```
-pip install -r requirements.txt
+pip install .
 ```
 
 #### Running the Script
