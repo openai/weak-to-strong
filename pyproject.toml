@@ -1,0 +1,18 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "weak_to_strong"
+version = "0.0.1"
+authors = [
+  { name="OpenAI", email="generalization@openai.com" },
+]
+description = "Weak-to-strong generalization"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
