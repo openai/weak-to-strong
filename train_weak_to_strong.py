@@ -19,28 +19,46 @@ MODEL_CONFIGS = [
         name="gpt2",
         default_lr=5e-5,
         eval_batch_size=32,
+        custom_kwargs={
+            "bf16": torch.cuda.is_bf16_supported(),
+            "fp32": not torch.cuda.is_bf16_supported(),
+        },
     ),
     ModelConfig(
         name="gpt2-medium",
         default_lr=5e-5,
         eval_batch_size=32,
+        custom_kwargs={
+            "bf16": torch.cuda.is_bf16_supported(),
+            "fp32": not torch.cuda.is_bf16_supported(),
+        },
     ),
     ModelConfig(
         name="gpt2-large",
         default_lr=1e-5,
         eval_batch_size=32,
+        custom_kwargs={
+            "bf16": torch.cuda.is_bf16_supported(),
+            "fp32": not torch.cuda.is_bf16_supported(),
+        },
     ),
     ModelConfig(
         name="gpt2-xl",
         default_lr=1e-5,
         eval_batch_size=2,
         gradient_checkpointing=True,
+        model_parallel=True,
+        custom_kwargs={
+            "bf16": torch.cuda.is_bf16_supported(),
+            "fp32": not torch.cuda.is_bf16_supported(),
+        },
     ),
     ModelConfig(
         name="Qwen/Qwen-1_8B",
         default_lr=1e-5,
         eval_batch_size=2,
         gradient_checkpointing=True,
+        model_parallel=True,
         custom_kwargs={
             "trust_remote_code": True,
             "bf16": torch.cuda.is_bf16_supported(),
