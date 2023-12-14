@@ -10,7 +10,7 @@ def append_to_jsonl(path: str, data: dict):
         f.write(json.dumps(data) + "\n")
 
 
-class WandbLogger(object):
+class WandbLogger:
     CURRENT = None
 
     log_path = None
