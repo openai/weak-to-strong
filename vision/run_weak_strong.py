@@ -1,8 +1,6 @@
-import einops
 import fire
 import numpy as np
 import torch
-import torchvision
 import tqdm
 from data import get_imagenet
 from models import alexnet, resnet50_dino, vitb8_dino
