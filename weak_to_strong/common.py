@@ -20,13 +20,17 @@ def get_tokenizer(model_name: str):
 def clear_mem(verbose: bool = False):
     """
     This function is used to clear the memory allocated by PyTorch.
-    It does so by calling the garbage collector and emptying the CUDA cache.
-    After clearing the memory, it prints the amount of memory allocated by PyTorch.
+    It does so by calling the garbage collector to release unused GPU memory.
+    After clearing the memory, it prints the current amount of memory still allocated by PyTorch (post-clean).
+
+    Parameters:
+    verbose (bool): Whether to print additional information.
     """
+
     gc.collect()
     torch.cuda.empty_cache()
     print(
-        "torch.cuda.memory_allocated: %fGB" % (torch.cuda.memory_allocated(0) / 1024 / 1024 / 1024)
+        f"torch.cuda.memory_allocated: {torch.cuda.memory_allocated(0) / 1024**3:.2f}GB"
     )
 
     if verbose:
@@ -36,7 +40,7 @@ def clear_mem(verbose: bool = False):
                 return getattr(x, a)
             except:
                 # amazing that this can cause...
-                #  (AttributeError, OSError, AssertionError, RuntimeError, ModuleNotFoundError)
+                # (AttributeError, OSError, AssertionError, RuntimeError, ModuleNotFoundError)
                 return None
 
         for obj in gc.get_objects():
