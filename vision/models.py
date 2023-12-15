@@ -4,7 +4,7 @@ import torchvision
 
 class HeadAndEmbedding(torch.nn.Module):
     def __init__(self, head):
-        super(HeadAndEmbedding, self).__init__()
+        super().__init__()
         self.head = head
 
     def forward(self, x):

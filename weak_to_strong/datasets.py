@@ -46,11 +46,7 @@ def load_dataset(ds_name: str, seed: int = 0, split_sizes: Optional[dict] = None
     return results
 
 
-def tokenize_dataset(
-    raw_ds: HfDataset,
-    tokenizer: Callable,
-    max_ctx: int,
-):
+def tokenize_dataset(raw_ds: HfDataset, tokenizer: Callable, max_ctx: int):
     """
     This function prepares the dataset for training. It takes the raw dataset, a formatting function,
     a tokenizer, a maximum context length
@@ -66,9 +62,7 @@ def tokenize_dataset(
 
     def process_function(res):
         toks = tokenizer(res["txt"])
-        return dict(
-            input_ids=toks["input_ids"],
-        )
+        return dict(input_ids=toks["input_ids"])
 
     ds = raw_ds.map(process_function, batched=False).filter(lambda x: len(x["input_ids"]) < max_ctx)
     return ds
@@ -105,10 +99,7 @@ def format_sciq(ex, rng):
     return dict(txt=txt, hard_label=hard_label)
 
 
-register_dataset(
-    "sciq",
-    DatasetConfig(loader=hf_loader("sciq"), formatter=format_sciq),
-)
+register_dataset("sciq", DatasetConfig(loader=hf_loader("sciq"), formatter=format_sciq))
 
 
 def format_anthropic_hh(ex, rng):

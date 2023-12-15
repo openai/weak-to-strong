@@ -1,0 +1,20 @@
+ci:
+    autoupdate_schedule: 'weekly'
+    autofix_prs: true
+
+repos:
+-   repo: https://github.com/psf/black
+    rev: 23.11.0
+    hooks:
+      - id: black-jupyter
+-   repo: https://github.com/asottile/pyupgrade
+    rev: v3.15.0
+    hooks:
+    -   id: pyupgrade
+        args: [--py37-plus]
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+    -   id: trailing-whitespace
+    -   id: check-toml
+    -   id: check-yaml

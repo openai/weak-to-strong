@@ -2,12 +2,7 @@ import torch
 
 
 class LossFnBase:
-    def __call__(
-        self,
-        logits: torch.Tensor,
-        labels: torch.Tensor,
-        **kwargs,
-    ) -> torch.Tensor:
+    def __call__(self, logits: torch.Tensor, labels: torch.Tensor, **kwargs) -> torch.Tensor:
         """
         This function calculates the loss between logits and labels.
         """
@@ -55,10 +50,7 @@ class product_loss_fn(LossFnBase):
         self.warmup_frac = warmup_frac
 
     def __call__(
-        self,
-        logits: torch.Tensor,
-        labels: torch.Tensor,
-        step_frac: float,
+        self, logits: torch.Tensor, labels: torch.Tensor, step_frac: float
     ) -> torch.Tensor:
         preds = torch.softmax(logits, dim=-1)
         target = torch.pow(preds, self.beta) * torch.pow(labels, self.alpha)
@@ -86,10 +78,7 @@ class logconf_loss_fn(LossFnBase):
         self.warmup_frac = warmup_frac
 
     def __call__(
-        self,
-        logits: torch.Tensor,
-        labels: torch.Tensor,
-        step_frac: float,
+        self, logits: torch.Tensor, labels: torch.Tensor, step_frac: float
     ) -> torch.Tensor:
         logits = logits.float()
         labels = labels.float()
@@ -100,8 +89,7 @@ class logconf_loss_fn(LossFnBase):
         assert mean_weak.shape == (2,)
         threshold = torch.quantile(preds[:, 0], mean_weak[1])
         strong_preds = torch.cat(
-            [(preds[:, 0] >= threshold)[:, None], (preds[:, 0] < threshold)[:, None]],
-            dim=1,
+            [(preds[:, 0] >= threshold)[:, None], (preds[:, 0] < threshold)[:, None]], dim=1
         )
         target = labels * (1 - coef) + strong_preds.detach() * coef
         loss = torch.nn.functional.cross_entropy(logits, target, reduction="none")

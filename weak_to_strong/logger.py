@@ -10,15 +10,12 @@ def append_to_jsonl(path: str, data: dict):
         f.write(json.dumps(data) + "\n")
 
 
-class WandbLogger(object):
+class WandbLogger:
     CURRENT = None
 
     log_path = None
 
-    def __init__(
-        self,
-        **kwargs,
-    ):
+    def __init__(self, **kwargs):
         project = os.environ.get("WANDB_PROJECT")
         self.use_wandb = project is not None
         if self.use_wandb:
