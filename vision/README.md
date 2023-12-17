@@ -43,7 +43,7 @@ python3 run_weak_strong.py --strong_model_name resnet50_dino --n_epochs 20
 python3 run_weak_strong.py --strong_model_name vitb8_dino --n_epochs 5
 ```
 
-With the comands above we get the following results (note that the results may not reproduce exactly due to randomness):
+With the commands above we get the following results (note that the results may not reproduce exactly due to randomness):
 
 | Model                   | Top-1 Accuracy |
 |-------------------------|----------------|
