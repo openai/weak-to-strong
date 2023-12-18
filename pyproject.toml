@@ -17,12 +17,15 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
-[project.dependencies]
-torch = "~2.1"
-numpy = "~1.24"
-transformers = "~4.36"
-datasets = "~2.14"
-fire = "~0.4"
-accelerate = "~0.25"
-transformers-stream-generator = "~0.0.4"
-torch_optimizer = "~0.3"
+dependencies = [
+    "torch~=2.1",
+    "numpy~=1.24",
+    "transformers~=4.36",
+    "datasets~=2.14",
+    "fire~=0.4",
+    "accelerate~=0.25",
+    "transformers-stream-generator~=0.0.4",
+    "torch_optimizer~=0.3"
+]
+
+

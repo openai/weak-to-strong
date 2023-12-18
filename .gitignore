@@ -2,3 +2,4 @@ dump
 *.pyc
 *.swp
 *.swo
+venv/*
