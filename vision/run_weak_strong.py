@@ -66,7 +66,9 @@ def train_logreg(
     model = torch.nn.Linear(d, n_classes).cuda()
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), weight_decay=weight_decay, lr=lr)
-    schedule = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=n_epochs)
+    n_batches = len(train_loader)
+    n_iter = n_batches * n_epochs
+    schedule = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=n_iter)
 
     results = {f"{key}_all": [] for key in eval_datasets.keys()}
     for epoch in (pbar := tqdm.tqdm(range(n_epochs), desc="Epoch 0")):
