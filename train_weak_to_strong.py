@@ -19,28 +19,19 @@ MODEL_CONFIGS = [
         name="gpt2",
         default_lr=5e-5,
         eval_batch_size=32,
-        custom_kwargs={
-            "bf16": torch.cuda.is_bf16_supported(),
-            "fp32": not torch.cuda.is_bf16_supported(),
-        },
+        custom_kwargs={},
     ),
     ModelConfig(
         name="gpt2-medium",
         default_lr=5e-5,
         eval_batch_size=32,
-        custom_kwargs={
-            "bf16": torch.cuda.is_bf16_supported(),
-            "fp32": not torch.cuda.is_bf16_supported(),
-        },
+        custom_kwargs={},
     ),
     ModelConfig(
         name="gpt2-large",
         default_lr=1e-5,
         eval_batch_size=32,
-        custom_kwargs={
-            "bf16": torch.cuda.is_bf16_supported(),
-            "fp32": not torch.cuda.is_bf16_supported(),
-        },
+        custom_kwargs={},
     ),
     ModelConfig(
         name="gpt2-xl",
@@ -48,10 +39,7 @@ MODEL_CONFIGS = [
         eval_batch_size=2,
         gradient_checkpointing=True,
         model_parallel=True,
-        custom_kwargs={
-            "bf16": torch.cuda.is_bf16_supported(),
-            "fp32": not torch.cuda.is_bf16_supported(),
-        },
+        custom_kwargs={},
     ),
     ModelConfig(
         name="Qwen/Qwen-1_8B",
@@ -61,8 +49,6 @@ MODEL_CONFIGS = [
         model_parallel=True,
         custom_kwargs={
             "trust_remote_code": True,
-            "bf16": torch.cuda.is_bf16_supported(),
-            "fp32": not torch.cuda.is_bf16_supported(),
         },
     ),
     ModelConfig(
@@ -74,8 +60,6 @@ MODEL_CONFIGS = [
         # note: you will probably not be able to run this without many gpus
         custom_kwargs={
             "trust_remote_code": True,
-            "bf16": torch.cuda.is_bf16_supported(),
-            "fp32": not torch.cuda.is_bf16_supported(),
         },
     ),
     ModelConfig(
@@ -87,8 +71,6 @@ MODEL_CONFIGS = [
         # note: you will probably not be able to run this without bf16 support and many gpus
         custom_kwargs={
             "trust_remote_code": True,
-            "bf16": torch.cuda.is_bf16_supported(),
-            "fp32": not torch.cuda.is_bf16_supported(),
         },
     ),
     ModelConfig(
@@ -100,8 +82,6 @@ MODEL_CONFIGS = [
         # note: you will probably not be able to run this without bf16 support and many gpus
         custom_kwargs={
             "trust_remote_code": True,
-            "bf16": torch.cuda.is_bf16_supported(),
-            "fp32": not torch.cuda.is_bf16_supported(),
         },
         # This model is really big, save space by using adafactor.
         # Note that even then it will take up ~60GB per GPU on an 8-GPU machine.
@@ -150,6 +130,7 @@ def main(
     linear_probe: bool = False,
     lr_schedule: str = "cosine_anneal",
     log_prefix: str = "",
+    bf_16: bool = False, 
     # Set to an absurdly high value so we don't do intermediate evals by default.
     eval_every: int = 100000000,
 ):
@@ -172,7 +153,13 @@ def main(
         strong_model_size in MODELS_DICT
     ), f"Unknown model size {strong_model_size} not in {MODELS_DICT}"
     strong_model_config = MODELS_DICT[strong_model_size]
-
+    
+    if bf_16:
+      strong_model_config.custom_kwargs["bf16"] = torch.cuda.is_bf16_supported()
+      strong_model_config.custom_kwargs["fp32"] = not torch.cuda.is_bf16_supported()
+      weak_model_config.custom_kwargs["bf16"] = torch.cuda.is_bf16_supported()
+      weak_model_config.custom_kwargs["fp32"] = not torch.cuda.is_bf16_supported()
+      
     if weak_lr is None:
         assert batch_size == 32
         weak_lr = weak_model_config.default_lr
