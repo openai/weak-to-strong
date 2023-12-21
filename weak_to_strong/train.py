@@ -293,7 +293,7 @@ def train_and_save_model(
             loss_fn=loss_fn,
             eval_batch_size=eval_batch_size,
             eval_every=eval_every,
-            minibatch_size=15,
+            minibatch_size=minibatch_size,
             train_with_dropout=train_with_dropout,
             lr_schedule=lr_schedule,
             optimizer_name=optimizer_name,
