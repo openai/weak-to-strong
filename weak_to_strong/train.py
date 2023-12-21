@@ -17,6 +17,47 @@ from weak_to_strong.eval import eval_model_acc
 from weak_to_strong.loss import xent_loss
 from weak_to_strong.model import TransformerWithHead
 
+def try_initialize_model_with_kwargs(model_config, custom_kwargs, num_labels=2, linear_probe=False):
+    try:
+        # Attempt to initialize the model with the given arguments
+        return TransformerWithHead.from_pretrained(
+            model_config.name, num_labels=2, linear_probe=linear_probe, **custom_kwargs
+        ).to("cuda")
+    except TypeError as e:
+        # Check if the exception is due to an unexpected keyword argument
+        if "unexpected keyword argument" in str(e):
+            # Identify the problematic keyword
+            problem_kwarg = str(e).split("'")[1]
+
+            # Remove the problematic keyword and retry
+            new_kwargs = {k: v for k, v in custom_kwargs.items() if k != problem_kwarg}
+            return try_initialize_model_with_kwargs(model_config, new_kwargs, num_labels, linear_probe)
+        else:
+            # If the error is not due to an unexpected keyword argument, re-raise it
+            raise
+
+def try_initialize_model_with_kwargs_2(model_config, custom_kwargs, num_labels=2, linear_probe=False):
+    try:
+        # Attempt to initialize the model with the given arguments
+        return TransformerWithHead.from_pretrained(
+            model_config.name,
+            num_labels=2,
+            device_map="auto",
+            linear_probe=linear_probe,
+            **custom_kwargs,
+        )
+    except TypeError as e:
+        # Check if the exception is due to an unexpected keyword argument
+        if "unexpected keyword argument" in str(e):
+            # Identify the problematic keyword
+            problem_kwarg = str(e).split("'")[1]
+
+            # Remove the problematic keyword and retry
+            new_kwargs = {k: v for k, v in custom_kwargs.items() if k != problem_kwarg}
+            return try_initialize_model_with_kwargs(model_config, new_kwargs, num_labels, linear_probe)
+        else:
+            # If the error is not due to an unexpected keyword argument, re-raise it
+            raise
 
 @dataclass
 class ModelConfig:
@@ -215,20 +256,16 @@ def train_and_save_model(
     # Load the model
     if model_config.model_parallel:
         assert torch.cuda.device_count() > 1, f"you might want more gpus for {model_config.name}"
-        model = TransformerWithHead.from_pretrained(
-            model_config.name,
-            num_labels=2,
-            device_map="auto",
-            linear_probe=linear_probe,
-            **custom_kwargs,
+        model = try_initialize_model_with_kwargs_2(
+            model_config, custom_kwargs, num_labels=2, linear_probe=linear_probe
         )
         already_trained = maybe_load_model(model)
         # slight misnomer, more like minibatch_size_per_dp_replica
         minibatch_size = minibatch_size_per_device
     else:
-        model = TransformerWithHead.from_pretrained(
-            model_config.name, num_labels=2, linear_probe=linear_probe, **custom_kwargs
-        ).to("cuda")
+        model = try_initialize_model_with_kwargs(
+            model_config, custom_kwargs, num_labels=2, linear_probe=linear_probe
+        )
         already_trained = maybe_load_model(model)
         # data parallel:  currently not supported with model parallel
         if torch.cuda.device_count() > 1:
@@ -256,7 +293,7 @@ def train_and_save_model(
             loss_fn=loss_fn,
             eval_batch_size=eval_batch_size,
             eval_every=eval_every,
-            minibatch_size=minibatch_size,
+            minibatch_size=15,
             train_with_dropout=train_with_dropout,
             lr_schedule=lr_schedule,
             optimizer_name=optimizer_name,
