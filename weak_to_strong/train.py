@@ -32,7 +32,7 @@ def try_initialize_model_with_kwargs(model_config, custom_kwargs, num_labels=2, 
             init_args["device_map"] = device_map
 
         # Attempt to initialize the model with the given arguments
-        return TransformerWithHead.from_pretrained(**init_args).to("cuda")
+        return TransformerWithHead.from_pretrained(**init_args)
     except TypeError as e:
         # Check if the exception is due to an unexpected keyword argument
         if "unexpected keyword argument" in str(e):
@@ -253,7 +253,7 @@ def train_and_save_model(
     else:
         model = try_initialize_model_with_kwargs(
             model_config, custom_kwargs, num_labels=2, linear_probe=linear_probe
-        )
+        ).to("cuda")
         already_trained = maybe_load_model(model)
         # data parallel:  currently not supported with model parallel
         if torch.cuda.device_count() > 1:
