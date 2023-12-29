@@ -124,7 +124,7 @@ register_dataset(
 
 
 def format_cosmosqa(ex, rng):
-    true_answer = ex[f"answer{str(ex['label'])}"]
+    true_answer = ex[f"answer{ex['label']}"]
     if "None of the above choices ." in true_answer:
         hard_label = 0
     else:
