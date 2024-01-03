@@ -231,9 +231,11 @@ def train_and_save_model(
         ).to("cuda")
         already_trained = maybe_load_model(model)
         # data parallel:  currently not supported with model parallel
+
+        minibatch_size = min(minibatch_size_per_device * torch.cuda.device_count(), batch_size)
+
         if torch.cuda.device_count() > 1:
             model = torch.nn.DataParallel(model, output_device=0)
-            minibatch_size = min(minibatch_size_per_device * torch.cuda.device_count(), batch_size)
             print(
                 "Using",
                 torch.cuda.device_count(),
