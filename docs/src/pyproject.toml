@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "weak_to_strong"
+version = "0.0.1"
+authors = [
+  { name="OpenAI", email="generalization@openai.com" },
+]
+description = "Weak-to-strong generalization"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies=[
+  "torch ~= 2.1",
+  "numpy ~= 1.24",
+  "transformers ~= 4.36",
+  "datasets ~= 2.14",
+  "fire ~= 0.4",
+  "accelerate ~= 0.25",
+  "transformers-stream-generator ~= 0.0.4",
+  "torch_optimizer ~= 0.3",
+  "wandb ~= 0.16.1"
+]

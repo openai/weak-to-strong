@@ -1,0 +1,541 @@
+{
+    "0": {
+        "file_id": 0,
+        "content": "/README.md",
+        "type": "filepath"
+    },
+    "1": {
+        "file_id": 0,
+        "content": "The codebase contains weak-to-strong learning setup for binary classification tasks, using pretrained language models and different loss functions. It can be set up in Python, managed with `pyproject.toml`, installed via `pip`, and run from the main script `train_weak_to_strong.py`. The project includes a list of authors, is released under a specific license, and acknowledges Hugging Face for their transformer models.",
+        "type": "summary"
+    },
+    "2": {
+        "file_id": 0,
+        "content": "**STATUS**: This codebase is not well tested and does not use the exact same settings we used in the paper, but in our experience gives qualitatively similar results when using large model size gaps and multiple seeds.  Expected results can be found for two datasets below.  We may update the code significantly in the coming week.\n# Weak-to-strong generalization\n![Our setup and how it relates to superhuman AI alignment](./weak-to-strong-setup.png)\nThis project contains code for implementing our [paper on weak-to-strong generalization](https://cdn.openai.com/papers/weak-to-strong-generalization.pdf).\nThe primary codebase contains a re-implementation of our weak-to-strong learning setup for binary classification tasks.  The codebase contains code for fine-tuning pretrained language models, and also training against the labels from another language model.  We support various losses described in the paper as well, such as the confidence auxiliary loss.\nThe `vision` directory contains stand-alone code for weak-to-strong in the vision models setting (AlexNet -> DINO on ImageNet).",
+        "type": "code",
+        "location": "/README.md:1-11"
+    },
+    "3": {
+        "file_id": 0,
+        "content": "The codebase contains a re-implementation of weak-to-strong learning setup for binary classification tasks, including fine-tuning pretrained language models and supporting various losses.",
+        "type": "comment"
+    },
+    "4": {
+        "file_id": 0,
+        "content": "### Getting Started\nThese instructions will get you a copy of the project up and running on your local machine for development and testing purposes.\n#### Installation\nYou need to have Python installed on your machine. The project uses `pyproject.toml` to manage dependencies. To install the dependencies, you can use a package manager like `pip`:\n```\npip install .\n```\n#### Running the Script\nThe main script of the project is train_weak_to_strong.py. It can be run from the command line using the following command:\n```\npython train_weak_to_strong.py\n```\nThe script accepts several command-line arguments to customize the training process. Here are some examples:\n```\npython train_weak_to_strong.py --batch_size 32 --max_ctx 512 --ds_name \"sciq\" --loss \"logconf\" --n_docs 1000 --n_test_docs 100 --weak_model_size \"gpt2-medium\" --strong_model_size \"gpt2-large\" --seed 42\n```\n#### Expected results\n<img src=\"notebooks/amazon_polarity_None.png\" width=\"350\">\n<br>\n<img src=\"notebooks/sciq_None.png\" width=\"350\">\n<br>\n<img src=\"notebooks/Anthropic-hh-rlhf_None.png\" width=\"350\">",
+        "type": "code",
+        "location": "/README.md:13-44"
+    },
+    "5": {
+        "file_id": 0,
+        "content": "This code provides instructions for setting up and running the project. It requires Python to be installed on the machine, uses `pyproject.toml` to manage dependencies, and can be installed using `pip`. The main script is `train_weak_to_strong.py`, which can be run from the command line with various customizable arguments. The expected results are displayed in the form of images from different datasets.",
+        "type": "comment"
+    },
+    "6": {
+        "file_id": 0,
+        "content": "### Authors\n- Adrien Ecoffet\n- Manas Joglekar\n- Jeffrey Wu\n- Jan Hendrik Kirchner\n- Pavel Izmailov (vision)\n### License\nThis project is licensed under the MIT License - see the LICENSE.md file for details.\n### Acknowledgments\n- Hugging Face for their open-source transformer models",
+        "type": "code",
+        "location": "/README.md:46-60"
+    },
+    "7": {
+        "file_id": 0,
+        "content": "The code provides the list of authors who contributed to the project, mentions the license under which the project is released, and acknowledges Hugging Face for their open-source transformer models.",
+        "type": "comment"
+    },
+    "8": {
+        "file_id": 1,
+        "content": "/pyproject.toml",
+        "type": "filepath"
+    },
+    "9": {
+        "file_id": 1,
+        "content": "This code is using Hatch as the build system and specifies dependencies for a Python project named \"weak_to_strong\" with version 0.0.1. The authors are credited to OpenAI, and it requires Python >=3.7. The dependencies include torch, numpy, transformers, datasets, fire, accelerate, transformers-stream-generator, torch_optimizer, and wandb.",
+        "type": "summary"
+    },
+    "10": {
+        "file_id": 1,
+        "content": "[build-system]\nrequires = [\"hatchling\"]\nbuild-backend = \"hatchling.build\"\n[project]\nname = \"weak_to_strong\"\nversion = \"0.0.1\"\nauthors = [\n  { name=\"OpenAI\", email=\"generalization@openai.com\" },\n]\ndescription = \"Weak-to-strong generalization\"\nreadme = \"README.md\"\nrequires-python = \">=3.7\"\nclassifiers = [\n    \"Programming Language :: Python :: 3\",\n    \"License :: OSI Approved :: MIT License\",\n    \"Operating System :: OS Independent\",\n]\ndependencies=[\n  \"torch ~= 2.1\",\n  \"numpy ~= 1.24\",\n  \"transformers ~= 4.36\",\n  \"datasets ~= 2.14\",\n  \"fire ~= 0.4\",\n  \"accelerate ~= 0.25\",\n  \"transformers-stream-generator ~= 0.0.4\",\n  \"torch_optimizer ~= 0.3\",\n  \"wandb ~= 0.16.1\"\n]",
+        "type": "code",
+        "location": "/pyproject.toml:1-29"
+    },
+    "11": {
+        "file_id": 1,
+        "content": "This code is using Hatch as the build system and specifies dependencies for a Python project named \"weak_to_strong\" with version 0.0.1. The authors are credited to OpenAI, and it requires Python >=3.7. The dependencies include torch, numpy, transformers, datasets, fire, accelerate, transformers-stream-generator, torch_optimizer, and wandb.",
+        "type": "comment"
+    },
+    "12": {
+        "file_id": 2,
+        "content": "/setup.py",
+        "type": "filepath"
+    },
+    "13": {
+        "file_id": 2,
+        "content": "This code sets up a Python package using setuptools. It defines the name, version, description, URL, author, and email of the package to be created. It also finds all packages in the directory and sets zip_safe to False.",
+        "type": "summary"
+    },
+    "14": {
+        "file_id": 2,
+        "content": "import setuptools\nsetuptools.setup(\n    name=\"weak_to_strong\",\n    version=\"0.1\",\n    description=\"Weak-to-strong generalization\",\n    url=\"#\",\n    author=\"OpenAI\",\n    author_email=\"generalization@openai.com\",\n    packages=setuptools.find_packages(),\n    zip_safe=False,\n)",
+        "type": "code",
+        "location": "/setup.py:1-12"
+    },
+    "15": {
+        "file_id": 2,
+        "content": "This code sets up a Python package using setuptools. It defines the name, version, description, URL, author, and email of the package to be created. It also finds all packages in the directory and sets zip_safe to False.",
+        "type": "comment"
+    },
+    "16": {
+        "file_id": 3,
+        "content": "/train_weak_to_strong.py",
+        "type": "filepath"
+    },
+    "17": {
+        "file_id": 3,
+        "content": "The code imports necessary libraries, defines configurations for precision and utilization, loads datasets, trains models using transfer learning, compares performance, calculates improvements, stores results, and summarizes findings in a JSON file.",
+        "type": "summary"
+    },
+    "18": {
+        "file_id": 3,
+        "content": "import json\nimport os\nfrom typing import Dict, List, Optional, Sequence, Union\nimport fire\nimport numpy as np\nimport torch\nimport weak_to_strong.logger as logger\nfrom weak_to_strong.common import get_tokenizer\nfrom weak_to_strong.datasets import (VALID_DATASETS, load_dataset,\n                                     tokenize_dataset)\nfrom weak_to_strong.loss import logconf_loss_fn, product_loss_fn, xent_loss\nfrom weak_to_strong.train import ModelConfig, train_and_save_model\n# NOTE learning rates are not particularly tuned, work somewhat reasonably at train batch size 32\nMODEL_CONFIGS = [\n    ModelConfig(\n        name=\"gpt2\",\n        default_lr=5e-5,\n        eval_batch_size=32,\n        custom_kwargs={\n            \"bf16\": torch.cuda.is_bf16_supported(),\n            \"fp32\": not torch.cuda.is_bf16_supported(),\n        },\n    ),\n    ModelConfig(\n        name=\"gpt2-medium\",\n        default_lr=5e-5,\n        eval_batch_size=32,\n        custom_kwargs={\n            \"bf16\": torch.cuda.is_bf16_supported(),\n            \"fp32\": not torch.cuda.is_bf16_supported(),",
+        "type": "code",
+        "location": "/train_weak_to_strong.py:1-33"
+    },
+    "19": {
+        "file_id": 3,
+        "content": "This code imports necessary libraries, defines a list of ModelConfigs with default learning rates and batch sizes, and includes functions for dataset loading and model training. It also checks if BF16 or FP32 is supported on the GPU.",
+        "type": "comment"
+    },
+    "20": {
+        "file_id": 3,
+        "content": "        },\n    ),\n    ModelConfig(\n        name=\"gpt2-large\",\n        default_lr=1e-5,\n        eval_batch_size=32,\n        custom_kwargs={\n            \"bf16\": torch.cuda.is_bf16_supported(),\n            \"fp32\": not torch.cuda.is_bf16_supported(),\n        },\n    ),\n    ModelConfig(\n        name=\"gpt2-xl\",\n        default_lr=1e-5,\n        eval_batch_size=2,\n        gradient_checkpointing=True,\n        model_parallel=True,\n        custom_kwargs={\n            \"bf16\": torch.cuda.is_bf16_supported(),\n            \"fp32\": not torch.cuda.is_bf16_supported(),\n        },\n    ),\n    ModelConfig(\n        name=\"Qwen/Qwen-1_8B\",\n        default_lr=1e-5,\n        eval_batch_size=2,\n        gradient_checkpointing=True,\n        model_parallel=True,\n        custom_kwargs={\n            \"trust_remote_code\": True,\n            \"bf16\": torch.cuda.is_bf16_supported(),\n            \"fp32\": not torch.cuda.is_bf16_supported(),\n        },\n    ),\n    ModelConfig(\n        name=\"Qwen/Qwen-7B\",\n        default_lr=1e-5,\n        eval_batch_size=2,\n        gradient_checkpointing=True,",
+        "type": "code",
+        "location": "/train_weak_to_strong.py:34-72"
+    },
+    "21": {
+        "file_id": 3,
+        "content": "Code contains a list of model configurations for various language models. Each configuration has properties like name, default learning rate, evaluation batch size, and custom kwargs (like bf16 and fp32 support). Some models also have additional properties like gradient checkpointing, model parallelism, and trust remote code.",
+        "type": "comment"
+    },
+    "22": {
+        "file_id": 3,
+        "content": "        model_parallel=True,\n        # note: you will probably not be able to run this without many gpus\n        custom_kwargs={\n            \"trust_remote_code\": True,\n            \"bf16\": torch.cuda.is_bf16_supported(),\n            \"fp32\": not torch.cuda.is_bf16_supported(),\n        },\n    ),\n    ModelConfig(\n        name=\"Qwen/Qwen-14B\",\n        default_lr=1e-5,\n        eval_batch_size=2,\n        gradient_checkpointing=True,\n        model_parallel=True,\n        # note: you will probably not be able to run this without bf16 support and many gpus\n        custom_kwargs={\n            \"trust_remote_code\": True,\n            \"bf16\": torch.cuda.is_bf16_supported(),\n            \"fp32\": not torch.cuda.is_bf16_supported(),\n        },\n    ),\n    ModelConfig(\n        name=\"Qwen/Qwen-72B\",\n        default_lr=1e-5,\n        eval_batch_size=1,\n        gradient_checkpointing=True,\n        model_parallel=True,\n        # note: you will probably not be able to run this without bf16 support and many gpus\n        custom_kwargs={\n            \"trust_remote_code\": True,",
+        "type": "code",
+        "location": "/train_weak_to_strong.py:73-102"
+    },
+    "23": {
+        "file_id": 3,
+        "content": "Defining multiple model configurations with different names, default learning rates, evaluation batch sizes, gradient checkpointing, and model parallelism. Requires bf16 support and many GPUs for execution.",
+        "type": "comment"
+    },
+    "24": {
+        "file_id": 3,
+        "content": "            \"bf16\": torch.cuda.is_bf16_supported(),\n            \"fp32\": not torch.cuda.is_bf16_supported(),\n        },\n        # This model is really big, save space by using adafactor.\n        # Note that even then it will take up ~60GB per GPU on an 8-GPU machine.\n        default_optimizer=\"adafactor\",\n    ),\n]\nMODELS_DICT: Dict[str, ModelConfig] = {\n    model_config.name: model_config for model_config in MODEL_CONFIGS\n}\nloss_dict = {\n    \"logconf\": logconf_loss_fn(),\n    \"product\": product_loss_fn(),\n    \"xent\": xent_loss(),\n}\nVALID_LOSSES: List[str] = list(loss_dict.keys())\ndef main(\n    batch_size: int = 32,\n    max_ctx: int = 1024,\n    ds_name: str = \"sciq\",\n    transfer_loss: Union[str, Sequence[str]] = \"xent,logconf\",\n    n_docs: int = 10000,\n    n_test_docs: int = 200,\n    weak_model_size: str = \"gpt2\",\n    weak_lr: Optional[float] = None,\n    strong_model_size: str = \"gpt2-xl\",\n    strong_lr: Optional[float] = None,\n    # Defaults to strong_lr\n    transfer_lr: Optional[float] = None,\n    # Optims default to default_optimizer in the model definitions",
+        "type": "code",
+        "location": "/train_weak_to_strong.py:103-138"
+    },
+    "25": {
+        "file_id": 3,
+        "content": "This code defines a main function with several arguments and configures model settings for transfer learning. It uses different types of losses, such as logconf, product, and xent. The model configurations are stored in the MODELS_DICT dictionary, and default optimizers are set to adafactor. The code also checks if BF16 is supported by the CUDA and sets the precision accordingly.",
+        "type": "comment"
+    },
+    "26": {
+        "file_id": 3,
+        "content": "    weak_optim: Optional[str] = None,\n    strong_optim: Optional[str] = None,\n    transfer_optim: Optional[str] = None,\n    gt_epochs: int = 2,\n    # defaults to gt_epochs\n    transfer_epochs: Optional[int] = None,\n    force_retrain: bool = False,\n    seed: int = 0,\n    minibatch_size_per_device: Optional[int] = None,\n    train_with_dropout: bool = False,\n    results_folder: str = \"/tmp/results\",\n    linear_probe: bool = False,\n    lr_schedule: str = \"cosine_anneal\",\n    log_prefix: str = \"\",\n    # Set to an absurdly high value so we don't do intermediate evals by default.\n    eval_every: int = 100000000,\n):\n    # this is per device!\n    if minibatch_size_per_device is None:\n        minibatch_size_per_device = 1\n    assert ds_name in VALID_DATASETS, f\"Unknown dataset {ds_name} not in {VALID_DATASETS}\"\n    if isinstance(transfer_loss, str):\n        transfer_losses = transfer_loss.split(\",\")\n    else:\n        transfer_losses = transfer_loss\n    del transfer_loss\n    for tloss in transfer_losses:\n        assert tloss in VALID_LOSSES, f\"Unknown loss {tloss} not in {VALID_LOSSES}\"",
+        "type": "code",
+        "location": "/train_weak_to_strong.py:139-166"
+    },
+    "27": {
+        "file_id": 3,
+        "content": "The code defines various optional parameters for training a weak model to a strong one and transferring the knowledge. It sets default values, asserts that the specified dataset is valid, splits transfer loss if it's provided as a string, and checks that each transfer loss is also valid.",
+        "type": "comment"
+    },
+    "28": {
+        "file_id": 3,
+        "content": "    assert (\n        weak_model_size in MODELS_DICT\n    ), f\"Unknown model size {weak_model_size} not in {MODELS_DICT}\"\n    weak_model_config = MODELS_DICT[weak_model_size]\n    assert (\n        strong_model_size in MODELS_DICT\n    ), f\"Unknown model size {strong_model_size} not in {MODELS_DICT}\"\n    strong_model_config = MODELS_DICT[strong_model_size]\n    if weak_lr is None:\n        assert batch_size == 32\n        weak_lr = weak_model_config.default_lr\n    if strong_lr is None:\n        assert batch_size == 32\n        strong_lr = strong_model_config.default_lr\n    if transfer_lr is None:\n        transfer_lr = strong_lr\n    if transfer_epochs is None:\n        transfer_epochs = gt_epochs\n    if weak_optim is None:\n        weak_optim = weak_model_config.default_optimizer\n    if strong_optim is None:\n        strong_optim = strong_model_config.default_optimizer\n    if transfer_optim is None:\n        transfer_optim = strong_optim\n    weak_eval_batch_size = weak_model_config.eval_batch_size\n    strong_eval_batch_size = strong_model_config.eval_batch_size",
+        "type": "code",
+        "location": "/train_weak_to_strong.py:167-195"
+    },
+    "29": {
+        "file_id": 3,
+        "content": "The code checks if the provided model sizes are valid, then fetches their configurations. It sets default learning rates and optimizers if not specified, and retrieves evaluation batch sizes from the models' configurations.",
+        "type": "comment"
+    },
+    "30": {
+        "file_id": 3,
+        "content": "    # Load dataset\n    dataset = load_dataset(ds_name, seed=seed, split_sizes=dict(train=n_docs, test=n_test_docs))\n    # Split the training dataset in half\n    train_dataset, test_ds = dataset[\"train\"], dataset[\"test\"]\n    split_data = train_dataset.train_test_split(test_size=0.5, seed=seed)\n    train1_ds, train2_ds = split_data[\"train\"], split_data[\"test\"]\n    print(\"len(train1):\", len(train1_ds), \"len(train2):\", len(train2_ds))\n    def train_model(\n        model_config: ModelConfig,\n        train_ds: torch.utils.data.Dataset,\n        test_ds: torch.utils.data.Dataset,\n        *,\n        loss_type: str,\n        label: str,\n        subpath,\n        lr,\n        eval_batch_size,\n        epochs=1,\n        inference_ds: Optional[torch.utils.data.Dataset] = None,\n        linear_probe: bool = False,\n        optimizer_name: str = \"adam\",\n    ):\n        save_path = os.path.join(results_folder, subpath)\n        linprobe_str = \"_linprobe\" if linear_probe else \"\"\n        logger.configure(\n            name=\"{log_prefix}{",
+        "type": "code",
+        "location": "/train_weak_to_strong.py:197-225"
+    },
+    "31": {
+        "file_id": 3,
+        "content": "The code loads a dataset and splits the training data in half. It then defines a function `train_model` that takes a model configuration, training dataset, testing dataset, loss type, label, subpath, learning rate, evaluation batch size, number of epochs, optional inference dataset, and a boolean flag for linear probe. The function saves results in a specified folder with a suffix indicating if linear probe was used or not. It also configures the logger.",
+        "type": "comment"
+    },
+    "32": {
+        "file_id": 3,
+        "content": "label}_{base_model_name}_{ds_name}_{loss_type}_{optimizer_name}_{lr}_{lr_schedule}{linprobe_str}_{datetime_now}\",\n            label=label,\n            ds_name=ds_name,\n            truncation_max_len=n_docs or \"none\",\n            loss_type=loss_type,\n            lr=lr,\n            batch_size=batch_size,\n            eval_batch_size=eval_batch_size,\n            minibatch_size_per_device=minibatch_size_per_device,\n            save_path=save_path,\n            base_model_name=model_config.name,\n            epochs=epochs,\n            linprobe_str=linprobe_str,\n            lr_schedule=lr_schedule,\n            log_prefix=log_prefix,\n            optimizer_name=optimizer_name,\n        )\n        # Tokenize datasets\n        tokenizer = get_tokenizer(model_config.name)\n        train_ds = tokenize_dataset(train_ds, tokenizer, max_ctx)\n        test_ds = tokenize_dataset(test_ds, tokenizer, max_ctx)\n        if inference_ds:\n            inference_ds = tokenize_dataset(inference_ds, tokenizer, max_ctx)\n        loss_fn = loss_dict[loss_type]",
+        "type": "code",
+        "location": "/train_weak_to_strong.py:225-249"
+    },
+    "33": {
+        "file_id": 3,
+        "content": "Creating an experiment name with specified parameters.\nTokenizing train, test, and optional inference datasets using the tokenizer for the given model.\nAssigning loss function based on specified loss type.",
+        "type": "comment"
+    },
+    "34": {
+        "file_id": 3,
+        "content": "        return train_and_save_model(\n            model_config,\n            train_ds,\n            test_ds,\n            inference_ds=inference_ds,\n            batch_size=batch_size,\n            save_path=save_path,\n            loss_fn=loss_fn,\n            lr=lr,\n            epochs=epochs,\n            force_retrain=force_retrain,\n            eval_batch_size=eval_batch_size,\n            minibatch_size_per_device=minibatch_size_per_device,\n            train_with_dropout=train_with_dropout,\n            linear_probe=linear_probe,\n            lr_schedule=lr_schedule,\n            optimizer_name=optimizer_name,\n            eval_every=eval_every,\n        )\n    # Train the weak model on the first half of the training data\n    print(f\"Training weak model, size {weak_model_size}\")\n    weak_test_results, weak_ds = train_model(\n        weak_model_config,\n        train1_ds,\n        test_ds,\n        loss_type=\"xent\",\n        label=\"weak\",\n        subpath=os.path.join(\"weak_model_gt\", weak_model_size.replace(\"/\", \"_\")),\n        lr=weak_lr,",
+        "type": "code",
+        "location": "/train_weak_to_strong.py:250-279"
+    },
+    "35": {
+        "file_id": 3,
+        "content": "Trains a strong model using given parameters and returns the trained model.\n\nTrains a weak model on the first half of the training data with specified configuration.",
+        "type": "comment"
+    },
+    "36": {
+        "file_id": 3,
+        "content": "        eval_batch_size=weak_eval_batch_size,\n        inference_ds=train2_ds,\n        epochs=gt_epochs,\n        linear_probe=linear_probe,\n        optimizer_name=weak_optim,\n    )\n    # Train the strong model on the second half of the training data\n    print(f\"Training strong model, size {strong_model_size}\")\n    strong_test_results, _ = train_model(\n        strong_model_config,\n        train2_ds,\n        test_ds,\n        loss_type=\"xent\",\n        label=\"strong\",\n        subpath=os.path.join(\"strong_model_gt\", strong_model_size.replace(\"/\", \"_\")),\n        lr=strong_lr,\n        eval_batch_size=strong_eval_batch_size,\n        epochs=gt_epochs,\n        linear_probe=linear_probe,\n        optimizer_name=strong_optim,\n    )\n    # Train the strong model on the second half of the training data with labels generated by the weak model\n    all_transfer_test_results = {}\n    for tloss in transfer_losses:\n        print(\n            f\"Training transfer model, size {strong_model_size} on labels from {weak_model_size}, with loss {tloss}\"",
+        "type": "code",
+        "location": "/train_weak_to_strong.py:280-307"
+    },
+    "37": {
+        "file_id": 3,
+        "content": "Training the strong model on the second half of training data with varying loss functions.\nComment: This code trains a strong model using the second half of the training data, then trains another strong model using labels generated by the weak model while testing various transfer loss functions.",
+        "type": "comment"
+    },
+    "38": {
+        "file_id": 3,
+        "content": "        )\n        transfer_test_results, _ = train_model(\n            strong_model_config,\n            weak_ds,\n            test_ds,\n            loss_type=tloss,\n            label=\"weak2strong\",\n            subpath=os.path.join(\n                \"strong_model_transfer\",\n                f\"{weak_model_size.replace('/', '_')}_{strong_model_size.replace('/', '_')}_{tloss}\",\n            ),\n            lr=transfer_lr,\n            eval_batch_size=strong_eval_batch_size,\n            epochs=transfer_epochs,\n            linear_probe=linear_probe,\n            optimizer_name=transfer_optim,\n        )\n        all_transfer_test_results[tloss] = transfer_test_results\n        del transfer_test_results\n    weak_acc = np.mean([x[\"acc\"] for x in weak_test_results])\n    strong_acc = np.mean([x[\"acc\"] for x in strong_test_results])\n    res_dict = {\n        \"weak_acc\": weak_acc,\n        \"strong_acc\": strong_acc,\n    }\n    print(\"weak acc:\", weak_acc)\n    print(\"strong acc:\", strong_acc)\n    for tloss, transfer_test_results in all_transfer_test_results.items():",
+        "type": "code",
+        "location": "/train_weak_to_strong.py:308-336"
+    },
+    "39": {
+        "file_id": 3,
+        "content": "This code performs model transfer learning by training a strong model using the results of a weak model, and then evaluates the performance improvement. The results are stored in 'all_transfer_test_results' dictionary. It calculates the mean accuracy for both weak and strong models, and prints them out. Finally, it iterates over all transfer test results in the dictionary.",
+        "type": "comment"
+    },
+    "40": {
+        "file_id": 3,
+        "content": "        transfer_acc = np.mean([x[\"acc\"] for x in transfer_test_results])\n        res_dict[f\"transfer_acc_{tloss}\"] = transfer_acc\n        print(f\"transfer acc ({tloss}):\", transfer_acc)\n    with open(\n        os.path.join(\n            results_folder,\n            f\"{weak_model_size.replace('/', '_')}_{strong_model_size.replace('/', '_')}.results_summary.json\",\n        ),\n        \"w\",\n    ) as f:\n        json.dump(\n            res_dict,\n            f,\n        )\n# python train_weak_to_strong.py --batch_size 32 --max_ctx 512 --ds_name \"sciq\" --transfer_loss \"logconf\" --n_docs 1000 --n_test_docs 100 --weak_model_size \"gpt2-medium\" --strong_model_size \"gpt2-large\" --seed 42\nif __name__ == \"__main__\":\n    fire.Fire(main)",
+        "type": "code",
+        "location": "/train_weak_to_strong.py:337-356"
+    },
+    "41": {
+        "file_id": 3,
+        "content": "Calculating transfer accuracy and storing results summary in a JSON file.",
+        "type": "comment"
+    },
+    "42": {
+        "file_id": 4,
+        "content": "/notebooks/Plotting.py",
+        "type": "filepath"
+    },
+    "43": {
+        "file_id": 4,
+        "content": "The code imports libraries, prepares data and models, calculates mean and median accuracy, performs plotting operations, and saves the labeled plot.",
+        "type": "summary"
+    },
+    "44": {
+        "file_id": 4,
+        "content": "#!/usr/bin/env python\n# coding: utf-8\n# # Simple Plotting\n# \n# In[ ]:\nRESULTS_PATH = \"../../your_sweep_results_path\"\nPLOT_ALL_SEEDS = False\n# Full sweep\nMODELS_TO_PLOT = [\"gpt2\", \"gpt2-medium\", \"gpt2-large\", \"gpt2-xl\", \"Qwen/Qwen-1_8B\", \"Qwen/Qwen-7B\", \"Qwen/Qwen-14B\"]\n# Minimal sweep\n# MODELS_TO_PLOT = [\"gpt2\", \"gpt2-medium\", \"gpt2-large\"]\n# In[ ]:\nimport numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\nimport seaborn as sns\nsns.set_style('whitegrid')\nfrom IPython.display import display\nimport os\nimport glob\nimport json\n# In[ ]:\nrecords = []\nall_results_folders = ['/'.join(e.split('/')[:-1]) for e in glob.glob(os.path.join(RESULTS_PATH, \"**/*.results_summary.json\"), recursive=True)]\nfor result_folder in set(all_results_folders):\n    config_file = os.path.join(result_folder, \"config.json\")\n    config = json.load(open(config_file, \"r\"))\n    if config[\"strong_model_size\"] not in MODELS_TO_PLOT:\n        continue\n    if 'seed' not in config:\n        config['seed'] = 0\n    result_filename = (config[\"weak_m",
+        "type": "code",
+        "location": "/notebooks/Plotting.py:1-47"
+    },
+    "45": {
+        "file_id": 4,
+        "content": "# Simple Plotting\nReading chunk 0-46: This code is importing necessary libraries, setting the seaborn style to whitegrid, and preparing a list of models to be plotted. It also loads configuration files from specified result folders, checks if the model's size is in the MODELS_TO_PLOT list, and continues only if it matches.",
+        "type": "comment"
+    },
+    "46": {
+        "file_id": 4,
+        "content": "odel_size\"].replace('.', '_') + \"_\" + config[\"strong_model_size\"].replace('.', '_') + \".results_summary.json\").replace('/', '_')\n    record = config.copy()\n    record.update(json.load(open(config_file.replace('config.json', result_filename))))\n    records.append(record)\ndf = pd.DataFrame.from_records(records).sort_values(['ds_name', 'weak_model_size', 'strong_model_size'])\n# In[ ]:\ndatasets = df.ds_name.unique()\nfor dataset in datasets:\n    cur_df = df[(df.ds_name == dataset)]\n    base_df = pd.concat([\n        pd.DataFrame.from_dict({\"strong_model_size\": cur_df['weak_model_size'].to_list(), \"accuracy\": cur_df['weak_acc'].to_list(), \"seed\": cur_df['seed'].to_list()}),\n        pd.DataFrame.from_dict({\"strong_model_size\": cur_df['strong_model_size'].to_list(), \"accuracy\": cur_df['strong_acc'].to_list(), \"seed\": cur_df['seed'].to_list()})\n    ])\n    base_accuracies = base_df.groupby('strong_model_size').agg({'accuracy': 'mean', 'seed': 'count'}).sort_values('accuracy')\n    base_accuracy_lookup = base_accuracies['accuracy'].to_dict()",
+        "type": "code",
+        "location": "/notebooks/Plotting.py:47-66"
+    },
+    "47": {
+        "file_id": 4,
+        "content": "This code reads data from a JSON file, merges it into a DataFrame, groups the data by strong model size and calculates mean accuracy for each group. It also stores the accuracy lookup in a dictionary.",
+        "type": "comment"
+    },
+    "48": {
+        "file_id": 4,
+        "content": "    base_accuracies = base_accuracies.reset_index()\n    base_df.reset_index(inplace=True)\n    base_df['weak_model_size'] = 'ground truth'\n    base_df['loss'] = 'xent'\n    base_df['strong_model_accuracy'] = base_df['strong_model_size'].apply(lambda x: base_accuracy_lookup[x])\n    weak_to_strong = cur_df[['weak_model_size', 'strong_model_size', 'seed'] + [e for e in cur_df.columns if e.startswith('transfer_acc')]]\n    weak_to_strong = weak_to_strong.melt(id_vars=['weak_model_size', 'strong_model_size', 'seed'], var_name='loss', value_name='accuracy')\n    weak_to_strong = weak_to_strong.dropna(subset=['accuracy'])\n    weak_to_strong.reset_index(inplace=True)\n    weak_to_strong['loss'] = weak_to_strong['loss'].str.replace('transfer_acc_', '')\n    weak_to_strong['strong_model_accuracy'] = weak_to_strong['strong_model_size'].apply(lambda x: base_accuracy_lookup[x])\n    # Exclude cases where the weak model is better than the strong model from PGR calculation.\n    pgr_df = cur_df[(cur_df['weak_model_size'] != cur_df['strong_model_size']) & (cur_df['strong_acc'] > cur_df['weak_acc'])]",
+        "type": "code",
+        "location": "/notebooks/Plotting.py:67-81"
+    },
+    "49": {
+        "file_id": 4,
+        "content": "Resets the index of `base_accuracies` and `base_df`. Sets 'weak_model_size' to 'ground truth' and 'loss' to 'xent'. Assigns strong model accuracy based on weak model size. Transforms data for better analysis, drops missing values, and resets index. Assigns correct strong model accuracy. Excludes cases where weak model is better than the strong model from PGR calculation.",
+        "type": "comment"
+    },
+    "50": {
+        "file_id": 4,
+        "content": "    pgr_df = pgr_df.melt(id_vars=[e for e in cur_df.columns if not e.startswith('transfer_acc')], var_name='loss', value_name='transfer_acc')\n    pgr_df = pgr_df.dropna(subset=['transfer_acc'])\n    pgr_df['loss'] = pgr_df['loss'].str.replace('transfer_acc_', '')\n    pgr_df['pgr'] = (pgr_df['transfer_acc'] - pgr_df['weak_acc']) / (pgr_df['strong_acc'] - pgr_df['weak_acc'])\n    for seed in [None] + (sorted(cur_df['seed'].unique().tolist()) if PLOT_ALL_SEEDS else []):\n        plot_df = pd.concat([base_df, weak_to_strong])\n        seed_pgr_df = pgr_df\n        if seed is not None:\n            plot_df = plot_df[plot_df['seed'] == seed]\n            # We mean across seeds, this is because sometimes the weak and strong models will have run on different hardware and therefore\n            # have slight differences. We want to average these out when filtering by seed.\n            seed_pgr_df = pgr_df[pgr_df['seed'] == seed]\n        if seed is not None or cur_df['seed'].nunique() == 1:\n            plot_df = plo",
+        "type": "code",
+        "location": "/notebooks/Plotting.py:82-98"
+    },
+    "51": {
+        "file_id": 4,
+        "content": "This code is performing the following steps:\n1. It is melting a DataFrame and dropping NaN values related to 'transfer_acc'.\n2. It is replacing strings in 'loss' column.\n3. Calculating progress ratio ('pgr') based on 'transfer_acc', 'weak_acc', and 'strong_acc' columns.\n4. Iterating over different seeds (if PLOT_ALL_SEEDS is True) or a specific seed, and concatenating DataFrames for plotting.\n5. Filtering DataFrame based on the seed value.\n6. If seed is not None or there is only one unique seed in the DataFrame, performing additional plotting operations.",
+        "type": "comment"
+    },
+    "52": {
+        "file_id": 4,
+        "content": "t_df[['strong_model_accuracy', 'weak_model_size', 'loss', 'accuracy']].groupby(['strong_model_accuracy', 'weak_model_size', 'loss']).mean().reset_index().sort_values(['loss', 'weak_model_size'], ascending=False)\n        print(f\"Dataset: {dataset} (seed: {seed})\")\n        pgr_results = seed_pgr_df.groupby(['loss']).aggregate({\"pgr\": \"median\"})\n        display(pgr_results)\n        palette = sns.color_palette('colorblind', n_colors=len(plot_df['weak_model_size'].unique()) - 1)\n        color_dict = {model: (\"black\" if model == 'ground truth' else palette.pop()) for model in plot_df['weak_model_size'].unique()}\n        sns.lineplot(data=plot_df, x='strong_model_accuracy', y='accuracy', hue='weak_model_size', style='loss', markers=True, palette=color_dict)\n        pd.plotting.table(plt.gca(), pgr_results.round(4), loc='lower right', colWidths=[0.1, 0.1], cellLoc='center', rowLoc='center')\n        plt.xticks(ticks=base_accuracies['accuracy'], labels=[f\"{e} ({base_accuracy_lookup[e]:.4f})\" for e in base_accuracies['strong_model_size']], rotation=90)",
+        "type": "code",
+        "location": "/notebooks/Plotting.py:98-110"
+    },
+    "53": {
+        "file_id": 4,
+        "content": "This code is performing the following tasks:\n1. Averages data by 'strong_model_accuracy', 'weak_model_size', and 'loss' in a given DataFrame, then resets index and sorts the result based on 'loss' and 'weak_model_size'.\n2. Prints dataset name and seed value used.\n3. Calculates median PGR (Percentage of Good Runs) for each loss category from a different DataFrame and displays it.\n4. Sets a color palette for line plots based on the number of unique 'weak_model_size' values in the plot DataFrame.\n5. Creates a dictionary to map each 'weak_model_size' value to a color from the palette, with black color for the 'ground truth' model.\n6. Draws a line plot from the plot DataFrame, using 'strong_model_accuracy' as x-axis and 'accuracy' as y-axis, grouped by 'weak_model_size' and 'loss'. The plot includes markers and has hue and style specified by their respective variables.\n7. Inserts a table in the lower right corner of the plot, displaying rounded PGR results from the previous step.\n8. Sets x-axis tick values to specific accuracy values, labeling them with their corresponding 'strong_model_accuracy' value and accuracy for each 'strong_model_size'.",
+        "type": "comment"
+    },
+    "54": {
+        "file_id": 4,
+        "content": "        plt.title(f\"Dataset: {dataset} (seed: {seed})\")\n        plt.legend(loc='upper left')\n        plt.savefig(f\"{dataset.replace('/', '-')}_{seed}.png\", dpi=300, bbox_inches='tight')\n        plt.show()",
+        "type": "code",
+        "location": "/notebooks/Plotting.py:111-114"
+    },
+    "55": {
+        "file_id": 4,
+        "content": "Saving a labeled plot with a specific title, legend in upper left corner, and file name based on dataset and seed.",
+        "type": "comment"
+    },
+    "56": {
+        "file_id": 5,
+        "content": "/vision/README.md",
+        "type": "filepath"
+    },
+    "57": {
+        "file_id": 5,
+        "content": "The code experiments with weak-to-strong learning on ImageNet using AlexNet, DINO ResNet50 and ViT-B/8 as models, providing options for data path, batch size, seed, and training parameters, while the table shows accuracy values of these models on the task and instructions to add customizations.",
+        "type": "summary"
+    },
+    "58": {
+        "file_id": 5,
+        "content": "# A Simple Weak-to-Strong Experiment on ImageNet\nWe provide code for a simple weak-to-strong experiment on ImageNet. \nWe generate the weak labels using an [AlexNet](https://pytorch.org/vision/main/models/generated/torchvision.models.alexnet.html) model pretrained on ImageNet and we use linear probes on top of [DINO](https://github.com/facebookresearch/dino) models\nas a strong student. \nThe full training command:\n```bash\npython3 run_weak_strong.py \\\n    data_path: <DATA_PATH> \\\n    weak_model_name: <WEAK_MODEL>\\\n    strong_model_name: <STRONG_MODEL> \\\n    batch_size <BATCH_SIZE> \\\n    seed <SEED> \\\n    n_epochs <N_EPOCHS> \\\n    lr <LR> \\\n    n_train <N_TRAIN>\n```\nParameters:\n* ```DATA_PATH``` &mdash; path to the base directory containing ImageNet data, see [torchvision page](https://pytorch.org/vision/stable/generated/torchvision.datasets.ImageNet.html) for instructions; should contain files `ILSVRC2012_devkit_t12.tar.gz` and `ILSVRC2012_img_val.tar`\n* ```WEAK_MODEL``` &mdash; weak model name:\n    - `\"alexnet\"` is the only default model and the only one currently implemented",
+        "type": "code",
+        "location": "/vision/README.md:1-24"
+    },
+    "59": {
+        "file_id": 5,
+        "content": "This code provides a simple weak-to-strong experiment on ImageNet using an AlexNet model pretrained on ImageNet as weak labels and linear probes on top of DINO models as strong students. It includes instructions for data path, weak model name, batch size, seed, number of epochs, learning rate, and number of training samples.",
+        "type": "comment"
+    },
+    "60": {
+        "file_id": 5,
+        "content": "* ```STRONG_MODEL``` &mdash; weak model name:\n    - `\"resnet50_dino\"` (default)\n    - `\"vitb8_dino\"`\n* ```BATCH_SIZE``` &mdash; batch size for weak label generation and embedding extraction (default: `128`)\n* ```SEED``` &mdash; random seed for dataset shuffling (default: `0`)\n* ```EPOCHS``` &mdash; number of training epochs (default: `10`)\n* ```LR``` &mdash; initial learning rate (default: `1e-3`)\n* ```N_TRAIN``` &mdash; number of datapoints used to train the linear probe; `50000 - N_TRAIN` datapoints are used as test (default: `40000`)\nExample commands:\n```bash\n# AlexNet → ResNet50 (DINO):\npython3 run_weak_strong.py --strong_model_name resnet50_dino --n_epochs 20\n# AlexNet → ViT-B/8 (DINO):\npython3 run_weak_strong.py --strong_model_name vitb8_dino --n_epochs 5\n```\nWith the commands above we get the following results (note that the results may not reproduce exactly due to randomness):\n| Model                   | Top-1 Accuracy |\n|-------------------------|----------------|\n| AlexNet                 | 56.6           |",
+        "type": "code",
+        "location": "/vision/README.md:25-50"
+    },
+    "61": {
+        "file_id": 5,
+        "content": "This code defines various parameters for training a weak model and a strong model, with options for different models such as ResNet50 and ViT-B/8. It also provides example commands to run the training for each model and includes information about expected results.",
+        "type": "comment"
+    },
+    "62": {
+        "file_id": 5,
+        "content": "| Dino ResNet50           | 64.5           |\n| Dino ViT-B/8            | 74.0           |\n| AlexNet → DINO ResNet50 | 61.9           |\n| AlexNet → DINO ViT-B/8  | 66.6           |\nYou can add new custom models to the `models.py` and new datasets to `data.py`.",
+        "type": "code",
+        "location": "/vision/README.md:51-56"
+    },
+    "63": {
+        "file_id": 5,
+        "content": "This table shows the accuracy of various models on the given task. It includes Dino ResNet50 and ViT-B/8, as well as AlexNet with DINO models. The accuracy values are provided for each model, and instructions are given to add custom models or datasets.",
+        "type": "comment"
+    },
+    "64": {
+        "file_id": 6,
+        "content": "/vision/data.py",
+        "type": "filepath"
+    },
+    "65": {
+        "file_id": 6,
+        "content": "This code imports necessary libraries and defines a transformation pipeline for image data. It also creates a function to load ImageNet dataset with optional parameters for data shuffling, batch size, and applying transformations.",
+        "type": "summary"
+    },
+    "66": {
+        "file_id": 6,
+        "content": "import torch\nimport torchvision\nRESIZE, CROP = 256, 224\nTRANSFORM = torchvision.transforms.Compose(\n    [\n        torchvision.transforms.Resize(RESIZE),\n        torchvision.transforms.CenterCrop(CROP),\n        torchvision.transforms.ToTensor(),\n        torchvision.transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),\n    ]\n)\ndef get_imagenet(datapath, split, batch_size, shuffle, transform=TRANSFORM):\n    ds = torchvision.datasets.ImageNet(root=datapath, split=split, transform=transform)\n    loader = torch.utils.data.DataLoader(ds, shuffle=shuffle, batch_size=batch_size)\n    return ds, loader",
+        "type": "code",
+        "location": "/vision/data.py:1-18"
+    },
+    "67": {
+        "file_id": 6,
+        "content": "This code imports necessary libraries and defines a transformation pipeline for image data. It also creates a function to load ImageNet dataset with optional parameters for data shuffling, batch size, and applying transformations.",
+        "type": "comment"
+    },
+    "68": {
+        "file_id": 7,
+        "content": "/vision/models.py",
+        "type": "filepath"
+    },
+    "69": {
+        "file_id": 7,
+        "content": "This code contains functions for creating instances of four different deep learning models: AlexNet, ResNet-50 DINO, ViT-B/8 DINO. The \"alexnet_replace_fc\" function replaces the last fully connected layer in AlexNet with a new layer that returns both the original output and the modified output. This is done to make the code compatible with other parts of the project that require this specific modification.",
+        "type": "summary"
+    },
+    "70": {
+        "file_id": 7,
+        "content": "import torch\nimport torchvision\nclass HeadAndEmbedding(torch.nn.Module):\n    def __init__(self, head):\n        super(HeadAndEmbedding, self).__init__()\n        self.head = head\n    def forward(self, x):\n        return x, self.head(x)\ndef _alexnet_replace_fc(model):\n    model.classifier = HeadAndEmbedding(model.classifier)\n    return model\ndef resnet50_dino():\n    model = torch.hub.load(\"facebookresearch/dino:main\", \"dino_resnet50\")\n    return model\ndef vitb8_dino():\n    model = torch.hub.load(\"facebookresearch/dino:main\", \"dino_vitb8\")\n    return model\ndef alexnet():\n    model = torchvision.models.alexnet(pretrained=True)\n    return _alexnet_replace_fc(model)",
+        "type": "code",
+        "location": "/vision/models.py:1-31"
+    },
+    "71": {
+        "file_id": 7,
+        "content": "This code contains functions for creating instances of four different deep learning models: AlexNet, ResNet-50 DINO, ViT-B/8 DINO. The \"alexnet_replace_fc\" function replaces the last fully connected layer in AlexNet with a new layer that returns both the original output and the modified output. This is done to make the code compatible with other parts of the project that require this specific modification.",
+        "type": "comment"
+    },
+    "72": {
+        "file_id": 8,
+        "content": "/vision/run_weak_strong.py",
+        "type": "filepath"
+    },
+    "73": {
+        "file_id": 8,
+        "content": "The code trains a logistic regression model using weak and strong labels, evaluates accuracy, and compares performance; it also imports libraries, defines functions, and includes features such as data loading, embedding checking, and epoch-based updating.",
+        "type": "summary"
+    },
+    "74": {
+        "file_id": 8,
+        "content": "import fire\nimport numpy as np\nimport torch\nimport tqdm\nfrom data import get_imagenet\nfrom models import alexnet, resnet50_dino, vitb8_dino\nfrom torch import nn\ndef get_model(name):\n    if name == \"alexnet\":\n        model = alexnet()\n    elif name == \"resnet50_dino\":\n        model = resnet50_dino()\n    elif name == \"vitb8_dino\":\n        model = vitb8_dino()\n    else:\n        raise ValueError(f\"Unknown model {name}\")\n    model.cuda()\n    model.eval()\n    model = nn.DataParallel(model)\n    return model\ndef get_embeddings(model, loader):\n    all_embeddings, all_y, all_probs = [], [], []\n    for x, y in tqdm.tqdm(loader):\n        output = model(x.cuda())\n        if len(output) == 2:\n            embeddings, logits = output\n            probs = torch.nn.functional.softmax(logits, dim=-1).detach().cpu()\n            all_probs.append(probs)\n        else:\n            embeddings = output\n        all_embeddings.append(embeddings.detach().cpu())\n        all_y.append(y)\n    all_embeddings = torch.cat(all_embeddings, axis=0)\n    all_y = torch.cat(all_y, axis=0)",
+        "type": "code",
+        "location": "/vision/run_weak_strong.py:1-41"
+    },
+    "75": {
+        "file_id": 8,
+        "content": "This code is importing necessary libraries, defining a function to obtain model embeddings from a given loader. It also contains a function to select the desired model for the task.\nThe code allows users to get model embeddings by providing a specific name for each predefined model (alexnet, resnet50_dino, and vitb8_dino). The model is then put in evaluation mode, and all models are parallelized using nn.DataParallel() for speedup.\nThe embeddings obtained from the model are saved into lists for further processing. The code uses tqdm for progress bar display during the execution process.",
+        "type": "comment"
+    },
+    "76": {
+        "file_id": 8,
+        "content": "    if len(all_probs) > 0:\n        all_probs = torch.cat(all_probs, axis=0)\n        acc = (torch.argmax(all_probs, dim=1) == all_y).float().mean()\n    else:\n        all_probs = None\n        acc = None\n    return all_embeddings, all_y, all_probs, acc\ndef train_logreg(\n    x_train,\n    y_train,\n    eval_datasets,\n    n_epochs=10,\n    weight_decay=0.0,\n    lr=1.0e-3,\n    batch_size=100,\n    n_classes=1000,\n):\n    x_train = x_train.float()\n    train_ds = torch.utils.data.TensorDataset(x_train, y_train)\n    train_loader = torch.utils.data.DataLoader(train_ds, shuffle=True, batch_size=batch_size)\n    d = x_train.shape[1]\n    model = torch.nn.Linear(d, n_classes).cuda()\n    criterion = torch.nn.CrossEntropyLoss()\n    optimizer = torch.optim.Adam(model.parameters(), weight_decay=weight_decay, lr=lr)\n    n_batches = len(train_loader)\n    n_iter = n_batches * n_epochs\n    schedule = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=n_iter)\n    results = {f\"{key}_all\": [] for key in eval_datasets.keys()}",
+        "type": "code",
+        "location": "/vision/run_weak_strong.py:42-73"
+    },
+    "77": {
+        "file_id": 8,
+        "content": "The code defines a function `train_logreg` that takes in training and evaluation datasets, number of epochs, weight decay, learning rate, batch size, and number of classes. It performs logistic regression training using the Adam optimizer with cosine annealing learning rate scheduling. The function returns the all_embeddings, all_y, all_probs, and accuracy for the evaluation datasets.",
+        "type": "comment"
+    },
+    "78": {
+        "file_id": 8,
+        "content": "    for epoch in (pbar := tqdm.tqdm(range(n_epochs), desc=\"Epoch 0\")):\n        correct, total = 0, 0\n        for x, y in train_loader:\n            x, y = x.cuda(), y.cuda()\n            optimizer.zero_grad()\n            pred = model(x)\n            loss = criterion(pred, y)\n            loss.backward()\n            optimizer.step()\n            schedule.step()\n            if len(y.shape) > 1:\n                y = torch.argmax(y, dim=1)\n            correct += (torch.argmax(pred, -1) == y).detach().float().sum().item()\n            total += len(y)\n        pbar.set_description(f\"Epoch {epoch}, Train Acc {correct / total:.3f}\")\n        for key, (x_test, y_test) in eval_datasets.items():\n            x_test = x_test.float().cuda()\n            pred = torch.argmax(model(x_test), axis=-1).detach().cpu()\n            acc = (pred == y_test).float().mean()\n            results[f\"{key}_all\"].append(acc)\n    for key in eval_datasets.keys():\n        results[key] = results[f\"{key}_all\"][-1]\n    return results\ndef main(\n    batch_size: int = 128,",
+        "type": "code",
+        "location": "/vision/run_weak_strong.py:74-102"
+    },
+    "79": {
+        "file_id": 8,
+        "content": "Looping over epochs, updating the model using training data, and calculating accuracy on validation sets.",
+        "type": "comment"
+    },
+    "80": {
+        "file_id": 8,
+        "content": "    weak_model_name: str = \"alexnet\",\n    strong_model_name: str = \"resnet50_dino\",\n    n_train: int = 40000,\n    seed: int = 0,\n    data_path: str = \"/root/\",\n    n_epochs: int = 10,\n    lr: float = 1e-3,\n):\n    weak_model = get_model(weak_model_name)\n    strong_model = get_model(strong_model_name)\n    _, loader = get_imagenet(data_path, split=\"val\", batch_size=batch_size, shuffle=False)\n    print(\"Getting weak labels...\")\n    _, gt_labels, weak_labels, weak_acc = get_embeddings(weak_model, loader)\n    print(f\"Weak label accuracy: {weak_acc:.3f}\")\n    print(\"Getting strong embeddings...\")\n    embeddings, strong_gt_labels, _, _ = get_embeddings(strong_model, loader)\n    assert torch.all(gt_labels == strong_gt_labels)\n    del strong_gt_labels\n    order = np.arange(len(embeddings))\n    rng = np.random.default_rng(seed)\n    rng.shuffle(order)\n    x = embeddings[order]\n    y = gt_labels[order]\n    yw = weak_labels[order]\n    x_train, x_test = x[:n_train], x[n_train:]\n    y_train, y_test = y[:n_train], y[n_train:]\n    yw_train, yw_test = yw[:n_train], yw[n_train:]",
+        "type": "code",
+        "location": "/vision/run_weak_strong.py:103-130"
+    },
+    "81": {
+        "file_id": 8,
+        "content": "The code initializes weak and strong models, loads data, gets weak labels with the weak model, checks for consistency in strong embeddings, shuffles the order of embeddings, splits data into training and testing sets.",
+        "type": "comment"
+    },
+    "82": {
+        "file_id": 8,
+        "content": "    yw_test = torch.argmax(yw_test, dim=1)\n    eval_datasets = {\"test\": (x_test, y_test), \"test_weak\": (x_test, yw_test)}\n    print(\"Training logreg on weak labels...\")\n    results_weak = train_logreg(x_train, yw_train, eval_datasets, n_epochs=n_epochs, lr=lr)\n    print(f\"Final accuracy: {results_weak['test']:.3f}\")\n    print(f\"Final supervisor-student agreement: {results_weak['test_weak']:.3f}\")\n    print(f\"Accuracy by epoch: {[acc.item() for acc in results_weak['test_all']]}\")\n    print(\n        f\"Supervisor-student agreement by epoch: {[acc.item() for acc in results_weak['test_weak_all']]}\"\n    )\n    print(\"Training logreg on ground truth labels...\")\n    results_gt = train_logreg(x_train, y_train, eval_datasets, n_epochs=n_epochs, lr=lr)\n    print(f\"Final accuracy: {results_gt['test']:.3f}\")\n    print(f\"Accuracy by epoch: {[acc.item() for acc in results_gt['test_all']]}\")\n    print(\"\\n\\n\" + \"=\" * 100)\n    print(f\"Weak label accuracy: {weak_acc:.3f}\")\n    print(f\"Weak→Strong accuracy: {results_weak['test']:.3f}\")",
+        "type": "code",
+        "location": "/vision/run_weak_strong.py:131-150"
+    },
+    "83": {
+        "file_id": 8,
+        "content": "This code is training a logistic regression model on weak and strong labels for classification tasks. It first calculates the argmax of yw_test, creates an evaluation dataset with weak labels, trains the logreg model using train_logreg function, prints the final accuracy and supervisor-student agreement, plots accuracy by epoch, and then trains a logreg model on ground truth labels for comparison. Finally, it displays the weak label accuracy and weak to strong accuracy.",
+        "type": "comment"
+    },
+    "84": {
+        "file_id": 8,
+        "content": "    print(f\"Strong accuracy: {results_gt['test']:.3f}\")\n    print(\"=\" * 100)\nif __name__ == \"__main__\":\n    fire.Fire(main)",
+        "type": "code",
+        "location": "/vision/run_weak_strong.py:151-156"
+    },
+    "85": {
+        "file_id": 8,
+        "content": "Printing strong accuracy value and separating with a line of 100 equals signs.",
+        "type": "comment"
+    },
+    "86": {
+        "file_id": 9,
+        "content": "/weak_to_strong/common.py",
+        "type": "filepath"
+    },
+    "87": {
+        "file_id": 9,
+        "content": "The code has two functions: get_tokenizer for returning a tokenizer based on the model name, and clear_mem for clearing PyTorch memory by using garbage collector and handling exceptions while checking for tensors in garbage collector's objects.",
+        "type": "summary"
+    },
+    "88": {
+        "file_id": 9,
+        "content": "import gc\nimport torch\nfrom transformers import AutoTokenizer\ndef get_tokenizer(model_name: str):\n    \"\"\"\n    This function returns a tokenizer based on the model name.\n    Parameters:\n    model_name: The name of the model for which the tokenizer is needed.\n    Returns:\n    A tokenizer for the specified model.\n    \"\"\"\n    return AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)\ndef clear_mem(verbose: bool = False):\n    \"\"\"\n    This function is used to clear the memory allocated by PyTorch.\n    It does so by calling the garbage collector to release unused GPU memory.\n    After clearing the memory, it prints the current amount of memory still allocated by PyTorch (post-clean).\n    Parameters:\n    verbose (bool): Whether to print additional information.\n    \"\"\"\n    gc.collect()\n    torch.cuda.empty_cache()\n    print(\n        f\"torch.cuda.memory_allocated: {torch.cuda.memory_allocated(0) / 1024**3:.2f}GB\"\n    )\n    if verbose:\n        def try_attr(x, a):\n            try:\n                return getattr(x, a)",
+        "type": "code",
+        "location": "/weak_to_strong/common.py:1-40"
+    },
+    "89": {
+        "file_id": 9,
+        "content": "This code contains two functions: \"get_tokenizer\" and \"clear_mem\". The get_tokenizer function returns a tokenizer based on the given model name. The clear_mem function is used to clear PyTorch memory by calling the garbage collector and printing the current amount of allocated memory post-clean.",
+        "type": "comment"
+    },
+    "90": {
+        "file_id": 9,
+        "content": "            except:\n                # amazing that this can cause...\n                # (AttributeError, OSError, AssertionError, RuntimeError, ModuleNotFoundError)\n                return None\n        for obj in gc.get_objects():\n            if torch.is_tensor(obj) or torch.is_tensor(try_attr(obj, \"data\")):\n                print(type(obj), obj.size(), obj.dtype)",
+        "type": "code",
+        "location": "/weak_to_strong/common.py:41-48"
+    },
+    "91": {
+        "file_id": 9,
+        "content": "Handling various exceptions and checking for tensors in the garbage collector's objects.",
+        "type": "comment"
+    },
+    "92": {
+        "file_id": 10,
+        "content": "/weak_to_strong/datasets.py",
+        "type": "filepath"
+    },
+    "93": {
+        "file_id": 10,
+        "content": "The code defines a `DatasetConfig` class for dataset loading, splitting, and tokenization. It includes functions to load new datasets with their respective loaders and formatters, and initializes two configurations: \"cosmos_qa\" and \"boolq\". It loads the specified datasets, prints information about them, and calculates mean hard label for training examples.",
+        "type": "summary"
+    },
+    "94": {
+        "file_id": 10,
+        "content": "import functools\nfrom dataclasses import dataclass\nfrom random import Random\nfrom typing import Any, Callable, Optional\nfrom datasets import Dataset as HfDataset\nfrom datasets import load_dataset as hf_load_dataset\n@dataclass\nclass DatasetConfig:\n    # split -> unshuffled dataset of items\n    loader: Callable[[str], HfDataset]\n    # formats items to have keys 'txt' and 'hard_label', takes a random.Random rng\n    formatter: Callable[[Any], Any]\n# mapping from dataset name to load function and format function\n_REGISTRY: dict[str, DatasetConfig] = {}\ndef register_dataset(name: str, config: DatasetConfig):\n    _REGISTRY[name] = config\ndef load_dataset(ds_name: str, seed: int = 0, split_sizes: Optional[dict] = None):\n    if split_sizes is None:\n        split_sizes = dict(train=None, test=None)\n    if ds_name not in _REGISTRY:\n        raise ValueError(f\"Unknown dataset {ds_name}, please register\")\n    cfg = _REGISTRY[ds_name]\n    results = {}\n    for split, n_docs in split_sizes.items():\n        ds = cfg.loader(split)",
+        "type": "code",
+        "location": "/weak_to_strong/datasets.py:1-35"
+    },
+    "95": {
+        "file_id": 10,
+        "content": "This code defines a class `DatasetConfig` and registers datasets with their corresponding loaders and formatters. The function `load_dataset()` loads datasets by name, split, and optional number of documents per split.",
+        "type": "comment"
+    },
+    "96": {
+        "file_id": 10,
+        "content": "        try:\n            ds = ds.select(range(n_docs))\n        except IndexError as e:\n            print(f\"Warning {ds_name} has less than {n_docs} docs, using all: {e}\")\n        ds = ds.map(functools.partial(cfg.formatter, rng=Random(seed)))\n        ds = ds.map(\n            lambda ex: {\"soft_label\": [1 - float(ex[\"hard_label\"]), float(ex[\"hard_label\"])]}\n        )\n        ds = ds.shuffle(seed=seed)  # shuffling a bit pointless for test set but wtv\n        results[split] = ds\n    return results\ndef tokenize_dataset(\n    raw_ds: HfDataset,\n    tokenizer: Callable,\n    max_ctx: int,\n):\n    \"\"\"\n    This function prepares the dataset for training. It takes the raw dataset, a formatting function,\n    a tokenizer, a maximum context length\n    Parameters:\n    raw_ds: The raw dataset to be processed.\n    tokenizer: The tokenizer to be used on the formatted dataset.\n    max_ctx: The maximum context length for the tokenizer.\n    Returns:\n    ds: The processed and shuffled dataset ready for training.\n    \"\"\"\n    def process_function(res):",
+        "type": "code",
+        "location": "/weak_to_strong/datasets.py:36-67"
+    },
+    "97": {
+        "file_id": 10,
+        "content": "This code is preparing a dataset for training. It selects the desired number of documents, applies formatting and tokenization, and shuffles the data.",
+        "type": "comment"
+    },
+    "98": {
+        "file_id": 10,
+        "content": "        toks = tokenizer(res[\"txt\"])\n        return dict(\n            input_ids=toks[\"input_ids\"],\n        )\n    ds = raw_ds.map(process_function, batched=False).filter(lambda x: len(x[\"input_ids\"]) < max_ctx)\n    return ds\ndef hf_loader(*hf_name, split_names=None):\n    if split_names is None:\n        split_names = dict()\n    return lambda split: hf_load_dataset(*hf_name, split=split_names.get(split, split))\n##########\n# ACTUAL DATASETS\n##########\ndef format_amazon_polarity(ex, rng):\n    return dict(txt=f\"{ex['title']} {ex['content']}\", hard_label=ex[\"label\"])\nregister_dataset(\n    \"amazon_polarity\",\n    DatasetConfig(loader=hf_loader(\"amazon_polarity\"), formatter=format_amazon_polarity),\n)\ndef format_sciq(ex, rng):\n    hard_label = int(rng.random() < 0.5)\n    if hard_label:\n        ans = ex[\"correct_answer\"]\n    else:\n        ans = rng.choice([ex[\"distractor1\"], ex[\"distractor2\"], ex[\"distractor3\"]])\n    txt = f\"Q: {ex['question']} A: {ans}\"\n    return dict(txt=txt, hard_label=hard_label)\nregister_dataset(\n    \"sciq\",",
+        "type": "code",
+        "location": "/weak_to_strong/datasets.py:68-109"
+    },
+    "99": {
+        "file_id": 10,
+        "content": "This code defines a function `process_function` that takes input text, tokenizes it using the `tokenizer`, and returns the \"input_ids\" as a dictionary. The `hf_loader` function is used to load datasets with different names (specified by hf_name) and splits (specified by split_names).\n\nThe code then defines two functions, `format_amazon_polarity` and `format_sciq`, which format the data for the respective datasets. These formatted datasets are registered using the `register_dataset` function.",
+        "type": "comment"
+    }
+}

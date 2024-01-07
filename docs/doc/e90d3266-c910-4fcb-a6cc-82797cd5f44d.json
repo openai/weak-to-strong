@@ -1,0 +1,10 @@
+{
+    "summary": "This code sets up a Python package using setuptools. It defines the name, version, description, URL, author, and email of the package to be created. It also finds all packages in the directory and sets zip_safe to False.",
+    "details": [
+        {
+            "comment": "This code sets up a Python package using setuptools. It defines the name, version, description, URL, author, and email of the package to be created. It also finds all packages in the directory and sets zip_safe to False.",
+            "location": "\"/media/root/Toshiba XG3/works/weak-to-strong/docs/src/setup.py\":0-11",
+            "content": "import setuptools\nsetuptools.setup(\n    name=\"weak_to_strong\",\n    version=\"0.1\",\n    description=\"Weak-to-strong generalization\",\n    url=\"#\",\n    author=\"OpenAI\",\n    author_email=\"generalization@openai.com\",\n    packages=setuptools.find_packages(),\n    zip_safe=False,\n)"
+        }
+    ]
+}

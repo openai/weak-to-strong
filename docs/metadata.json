@@ -1,0 +1,90 @@
+{
+    "url": {
+        "full": "https://github.com/james4ever0/weak-to-strong",
+        "partial": "james4ever0/weak-to-strong"
+    },
+    "file_mapping": {
+        "0": {
+            "filepath": "/README.md",
+            "entry_id": 0,
+            "language_id": "plain-text"
+        },
+        "1": {
+            "filepath": "/pyproject.toml",
+            "entry_id": 8,
+            "language_id": "toml"
+        },
+        "2": {
+            "filepath": "/setup.py",
+            "entry_id": 12,
+            "language_id": "python"
+        },
+        "3": {
+            "filepath": "/train_weak_to_strong.py",
+            "entry_id": 16,
+            "language_id": "python"
+        },
+        "4": {
+            "filepath": "/notebooks/Plotting.py",
+            "entry_id": 42,
+            "language_id": "python"
+        },
+        "5": {
+            "filepath": "/vision/README.md",
+            "entry_id": 56,
+            "language_id": "markdown"
+        },
+        "6": {
+            "filepath": "/vision/data.py",
+            "entry_id": 64,
+            "language_id": "python"
+        },
+        "7": {
+            "filepath": "/vision/models.py",
+            "entry_id": 68,
+            "language_id": "python"
+        },
+        "8": {
+            "filepath": "/vision/run_weak_strong.py",
+            "entry_id": 72,
+            "language_id": "python"
+        },
+        "9": {
+            "filepath": "/weak_to_strong/common.py",
+            "entry_id": 86,
+            "language_id": "python"
+        },
+        "10": {
+            "filepath": "/weak_to_strong/datasets.py",
+            "entry_id": 92,
+            "language_id": "python"
+        },
+        "11": {
+            "filepath": "/weak_to_strong/eval.py",
+            "entry_id": 104,
+            "language_id": "python"
+        },
+        "12": {
+            "filepath": "/weak_to_strong/logger.py",
+            "entry_id": 112,
+            "language_id": "python"
+        },
+        "13": {
+            "filepath": "/weak_to_strong/loss.py",
+            "entry_id": 120,
+            "language_id": "python"
+        },
+        "14": {
+            "filepath": "/weak_to_strong/model.py",
+            "entry_id": 130,
+            "language_id": "python"
+        },
+        "15": {
+            "filepath": "/weak_to_strong/train.py",
+            "entry_id": 136,
+            "language_id": "python"
+        }
+    },
+    "project_name": "weak-to-strong",
+    "split_count": 2
+}

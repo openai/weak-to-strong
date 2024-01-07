@@ -1,0 +1,10 @@
+{
+    "summary": "This code contains functions for creating instances of four different deep learning models: AlexNet, ResNet-50 DINO, ViT-B/8 DINO. The \"alexnet_replace_fc\" function replaces the last fully connected layer in AlexNet with a new layer that returns both the original output and the modified output. This is done to make the code compatible with other parts of the project that require this specific modification.",
+    "details": [
+        {
+            "comment": "This code contains functions for creating instances of four different deep learning models: AlexNet, ResNet-50 DINO, ViT-B/8 DINO. The \"alexnet_replace_fc\" function replaces the last fully connected layer in AlexNet with a new layer that returns both the original output and the modified output. This is done to make the code compatible with other parts of the project that require this specific modification.",
+            "location": "\"/media/root/Toshiba XG3/works/weak-to-strong/docs/src/vision/models.py\":0-30",
+            "content": "import torch\nimport torchvision\nclass HeadAndEmbedding(torch.nn.Module):\n    def __init__(self, head):\n        super(HeadAndEmbedding, self).__init__()\n        self.head = head\n    def forward(self, x):\n        return x, self.head(x)\ndef _alexnet_replace_fc(model):\n    model.classifier = HeadAndEmbedding(model.classifier)\n    return model\ndef resnet50_dino():\n    model = torch.hub.load(\"facebookresearch/dino:main\", \"dino_resnet50\")\n    return model\ndef vitb8_dino():\n    model = torch.hub.load(\"facebookresearch/dino:main\", \"dino_vitb8\")\n    return model\ndef alexnet():\n    model = torchvision.models.alexnet(pretrained=True)\n    return _alexnet_replace_fc(model)"
+        }
+    ]
+}
