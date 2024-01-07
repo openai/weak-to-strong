@@ -1,0 +1,327 @@
+{
+    "100": {
+        "file_id": 10,
+        "content": "    DatasetConfig(loader=hf_loader(\"sciq\"), formatter=format_sciq),\n)\ndef format_anthropic_hh(ex, rng):\n    hard_label = int(rng.random() < 0.5)\n    txt = ex[\"chosen\"] if hard_label else ex[\"rejected\"]\n    return dict(txt=txt, hard_label=hard_label)\nregister_dataset(\n    \"anthropic_hh\",\n    DatasetConfig(loader=hf_loader(\"Anthropic/hh-rlhf\"), formatter=format_anthropic_hh),\n)\ndef format_cosmosqa(ex, rng):\n    true_answer = ex[\"answer\" + str(ex[\"label\"])]\n    if \"None of the above choices .\" in true_answer:\n        hard_label = 0\n    else:\n        assert \"None of the above choices\" not in true_answer, true_answer\n        hard_label = int(rng.random() < 0.5)\n    if hard_label:\n        answer = true_answer\n    else:\n        candidate_answers = [ex[\"answer\" + str(i)] for i in range(4)]\n        answer = rng.choice([x for x in candidate_answers if x != true_answer])\n    txt = f\"Context: {ex['context']}\\nQuestion: {ex['question']}\\nAnswer: {answer}\"\n    return dict(txt=txt, hard_label=hard_label)\nregister_dataset(\n    \"cosmos_qa\",",
+        "type": "code",
+        "location": "/weak_to_strong/datasets.py:110-143"
+    },
+    "101": {
+        "file_id": 10,
+        "content": "This code defines two datasets, \"anthropic_hh\" and \"cosmos_qa\", with their respective loaders and formatters. The \"format_anthropic_hh\" function assigns a hard label to examples randomly, while the \"format_cosmosqa\" function generates a formatted text based on whether the true answer is one of the multiple-choice options or not.",
+        "type": "comment"
+    },
+    "102": {
+        "file_id": 10,
+        "content": "    DatasetConfig(\n        loader=hf_loader(\"cosmos_qa\", split_names=dict(test=\"validation\")),\n        formatter=format_cosmosqa,\n    ),\n)\ndef format_boolq(ex, rng):\n    hard_label = int(ex[\"answer\"])\n    txt = f\"Passage: {ex['passage']}\\nQuestion: {ex['question']}\"\n    return dict(txt=txt, hard_label=hard_label)\nregister_dataset(\n    \"boolq\",\n    DatasetConfig(\n        loader=hf_loader(\"boolq\", split_names=dict(test=\"validation\")), formatter=format_boolq\n    ),\n)\nVALID_DATASETS: list[str] = list(_REGISTRY.keys())\n\"\"\"\nfrom datasets import disable_caching\ndisable_caching()\nfrom weak_to_strong.datasets import load_dataset, VALID_DATASETS\nimport numpy as np\nds_name = \"boolq\"\nprint(VALID_DATASETS)\nds = load_dataset(ds_name, split_sizes=dict(train=500, test=10))\ntrain = list(ds['train'])\ntest = list(ds['test'])\nprint(test[0])\nprint(np.mean([x['hard_label'] for x in train]))\n\"\"\"",
+        "type": "code",
+        "location": "/weak_to_strong/datasets.py:144-182"
+    },
+    "103": {
+        "file_id": 10,
+        "content": "The code imports necessary libraries and defines two dataset configurations: \"cosmos_qa\" and \"boolq\". It then initializes a list of valid datasets, loads the specified datasets, prints some information about the loaded data (including one example from the test split), and calculates the mean hard label for the training examples.",
+        "type": "comment"
+    },
+    "104": {
+        "file_id": 11,
+        "content": "/weak_to_strong/eval.py",
+        "type": "filepath"
+    },
+    "105": {
+        "file_id": 11,
+        "content": "The code defines a function eval_model_acc that evaluates model accuracy on a dataset, iterating through batches in evaluation mode without gradient descent. It returns various data and calculates the accuracy with standard deviation before returning a dataset from the results.",
+        "type": "summary"
+    },
+    "106": {
+        "file_id": 11,
+        "content": "import datasets\nimport numpy as np\nimport torch\nfrom torch import nn\ndef to_batch(x, batch_size):\n    for i in range(0, len(x), batch_size):\n        yield x[i : i + batch_size]\ndef unpack(x):\n    assert isinstance(x, torch.Tensor), type(x)\n    return x.detach().float().cpu().numpy().tolist()\ndef eval_model_acc(model: nn.Module, ds: datasets.Dataset, eval_batch_size: int = 16) -> None:\n    \"\"\"\n    This function evaluates the accuracy of a given model on a given dataset.\n    Parameters:\n    model (nn.Module): The model to be evaluated.\n    ds (datasets.Dataset): The dataset on which the model is to be evaluated.\n    Returns:\n    results (list): A list of dictionaries containing the input_ids, ground truth label, predicted label,\n                    accuracy of prediction, logits and soft label for each example in the dataset.\n    \"\"\"\n    model.eval()\n    with torch.no_grad():\n        results = []\n        # for ex in ds:\n        for batch in to_batch(ds, eval_batch_size):\n            # pad input_ids to common length",
+        "type": "code",
+        "location": "/weak_to_strong/eval.py:1-36"
+    },
+    "107": {
+        "file_id": 11,
+        "content": "This code defines a function eval_model_acc which takes a model, a dataset and an optional evaluation batch size, and returns a list of dictionaries containing the input ids, ground truth labels, predicted labels, accuracy of predictions, logits and soft labels for each example in the dataset. It evaluates the given model's accuracy on the given dataset by iterating through batches of examples from the dataset while keeping the model in evaluation mode and without performing gradient descent.",
+        "type": "comment"
+    },
+    "108": {
+        "file_id": 11,
+        "content": "            input_ids = torch.nn.utils.rnn.pad_sequence(\n                [torch.tensor(ex) for ex in batch[\"input_ids\"]], batch_first=True\n            ).to(model.device if hasattr(model, \"device\") else \"cpu\")\n            labels = batch[\"soft_label\"]\n            # run forward pass\n            raw_logits = model(input_ids)\n            probs = unpack(torch.nn.functional.softmax(raw_logits, dim=-1))\n            logits = unpack(raw_logits)\n            preds = np.argmax(probs, axis=-1)\n            labels = np.argmax(labels, axis=-1)\n            results.extend(\n                [\n                    dict(\n                        txt=txt,\n                        input_ids=input_id,\n                        gt_label=label,\n                        hard_label=pred,\n                        acc=label == pred,\n                        logits=logit,\n                        soft_label=prob,\n                    )\n                    for input_id, txt, label, pred, prob, logit in zip(\n                        batch[\"input_ids\"], batch[\"txt\"], labels, preds, probs, logits",
+        "type": "code",
+        "location": "/weak_to_strong/eval.py:37-62"
+    },
+    "109": {
+        "file_id": 11,
+        "content": "This code prepares input_ids, pads sequences, and runs a forward pass on the model to get logits. It then applies softmax function to get probabilities and argmax to get predictions and ground truth labels. Finally, it creates a list of results with text, input IDs, ground truth labels, predicted labels, accuracy, logits, and softmax probabilities.",
+        "type": "comment"
+    },
+    "110": {
+        "file_id": 11,
+        "content": "                    )\n                ]\n            )\n        accs = [r[\"acc\"] for r in results]\n        print(\"Accuracy:\", np.mean(accs), \"+/-\", np.std(accs) / np.sqrt(len(accs)))\n        return datasets.Dataset.from_list(results)",
+        "type": "code",
+        "location": "/weak_to_strong/eval.py:63-69"
+    },
+    "111": {
+        "file_id": 11,
+        "content": "Calculates accuracy and prints it with standard deviation from the results list. Then returns a dataset from the results.",
+        "type": "comment"
+    },
+    "112": {
+        "file_id": 12,
+        "content": "/weak_to_strong/logger.py",
+        "type": "filepath"
+    },
+    "113": {
+        "file_id": 12,
+        "content": "The WandbLogger class, which interacts with the Weights & Biases logging system and provides methods for logging, dumping data, configuring, and shutdown functionality.",
+        "type": "summary"
+    },
+    "114": {
+        "file_id": 12,
+        "content": "import json\nimport os\nfrom datetime import datetime\nimport wandb\ndef append_to_jsonl(path: str, data: dict):\n    with open(path, \"a\") as f:\n        f.write(json.dumps(data) + \"\\n\")\nclass WandbLogger(object):\n    CURRENT = None\n    log_path = None\n    def __init__(\n        self,\n        **kwargs,\n    ):\n        project = os.environ.get(\"WANDB_PROJECT\")\n        self.use_wandb = project is not None\n        if self.use_wandb:\n            wandb.init(\n                config=kwargs,\n                project=project,\n                name=kwargs[\"name\"].format(\n                    **kwargs, datetime_now=datetime.now().strftime(\"%Y-%m-%d_%H-%M-%S\")\n                )\n                if \"name\" in kwargs\n                else None,\n            )\n        if \"save_path\" in kwargs:\n            self.log_path = os.path.join(kwargs[\"save_path\"], \"log.jsonl\")\n            if not os.path.exists(kwargs[\"save_path\"]):\n                os.makedirs(kwargs[\"save_path\"])\n        self._log_dict = {}\n    def logkv(self, key, value):\n        self._log_dict[key] = value",
+        "type": "code",
+        "location": "/weak_to_strong/logger.py:1-41"
+    },
+    "115": {
+        "file_id": 12,
+        "content": "The code defines a `WandbLogger` class that initializes and interacts with the Weights & Biases (W&B) logging system. It also includes a function `append_to_jsonl()` for appending data to a JSONL file. The logger sets up the W&B project if needed and allows saving logs in a specified path as a JSONL file.",
+        "type": "comment"
+    },
+    "116": {
+        "file_id": 12,
+        "content": "    def logkvs(self, d):\n        self._log_dict.update(d)\n    def dumpkvs(self):\n        if self.use_wandb:\n            wandb.log(self._log_dict)\n        if self.log_path is not None:\n            append_to_jsonl(self.log_path, self._log_dict)\n        self._log_dict = {}\n    def shutdown(self):\n        if self.use_wandb:\n            wandb.finish()\ndef is_configured():\n    return WandbLogger.CURRENT is not None\ndef get_current():\n    assert is_configured(), \"WandbLogger is not configured\"\n    return WandbLogger.CURRENT\ndef configure(**kwargs):\n    if is_configured():\n        WandbLogger.CURRENT.shutdown()\n    WandbLogger.CURRENT = WandbLogger(**kwargs)\n    return WandbLogger.CURRENT\ndef logkv(key, value):\n    assert is_configured(), \"WandbLogger is not configured\"\n    WandbLogger.CURRENT.logkv(key, value)\ndef logkvs(d):\n    assert is_configured(), \"WandbLogger is not configured\"\n    WandbLogger.CURRENT.logkvs(d)\ndef dumpkvs():\n    assert is_configured(), \"WandbLogger is not configured\"\n    WandbLogger.CURRENT.dumpkvs()",
+        "type": "code",
+        "location": "/weak_to_strong/logger.py:43-86"
+    },
+    "117": {
+        "file_id": 12,
+        "content": "This code defines a class \"WandbLogger\" with methods to log and dump key-value pairs, configure the logger, and assert if the logger is configured. The main function is the \"configure\" method which ensures only one instance of WandbLogger exists at any given time by shutting down any existing instances before creating a new one.",
+        "type": "comment"
+    },
+    "118": {
+        "file_id": 12,
+        "content": "def shutdown():\n    assert is_configured(), \"WandbLogger is not configured\"\n    WandbLogger.CURRENT.shutdown()\n    WandbLogger.CURRENT = None",
+        "type": "code",
+        "location": "/weak_to_strong/logger.py:89-92"
+    },
+    "119": {
+        "file_id": 12,
+        "content": "The \"shutdown\" function asserts that WandbLogger is configured, then calls its shutdown method, and sets the current logger to None.",
+        "type": "comment"
+    },
+    "120": {
+        "file_id": 13,
+        "content": "/weak_to_strong/loss.py",
+        "type": "filepath"
+    },
+    "121": {
+        "file_id": 13,
+        "content": "The code defines a base class for loss functions, including xent_loss (cross entropy loss), product_loss_fn, and a custom loss function \"logconf_loss_fn\" that calculates cross entropy loss using logits and labels, applying power functions based on beta and alpha values with an optional warmup_frac parameter.",
+        "type": "summary"
+    },
+    "122": {
+        "file_id": 13,
+        "content": "import torch\nclass LossFnBase:\n    def __call__(\n        self,\n        logits: torch.Tensor,\n        labels: torch.Tensor,\n        **kwargs,\n    ) -> torch.Tensor:\n        \"\"\"\n        This function calculates the loss between logits and labels.\n        \"\"\"\n        raise NotImplementedError\n# Custom loss function\nclass xent_loss(LossFnBase):\n    def __call__(\n        self, logits: torch.Tensor, labels: torch.Tensor, step_frac: float\n    ) -> torch.Tensor:\n        \"\"\"\n        This function calculates the cross entropy loss between logits and labels.\n        Parameters:\n        logits: The predicted values.\n        labels: The actual values.\n        step_frac: The fraction of total training steps completed.\n        Returns:\n        The mean of the cross entropy loss.\n        \"\"\"\n        loss = torch.nn.functional.cross_entropy(logits, labels)\n        return loss.mean()\nclass product_loss_fn(LossFnBase):\n    \"\"\"\n    This class defines a custom loss function for product of predictions and labels.\n    Attributes:\n    alpha: A float indicating how much to weigh the weak model.",
+        "type": "code",
+        "location": "/weak_to_strong/loss.py:1-42"
+    },
+    "123": {
+        "file_id": 13,
+        "content": "The code defines a base class for loss functions and two custom loss functions, xent_loss (cross entropy loss) and product_loss_fn (custom loss function). The custom loss functions extend the LossFnBase class and override the __call__ method to calculate their respective losses.",
+        "type": "comment"
+    },
+    "124": {
+        "file_id": 13,
+        "content": "    beta: A float indicating how much to weigh the strong model.\n    warmup_frac: A float indicating the fraction of total training steps for warmup.\n    \"\"\"\n    def __init__(\n        self,\n        alpha: float = 1.0,  # how much to weigh the weak model\n        beta: float = 1.0,  # how much to weigh the strong model\n        warmup_frac: float = 0.1,  # in terms of fraction of total training steps\n    ):\n        self.alpha = alpha\n        self.beta = beta\n        self.warmup_frac = warmup_frac\n    def __call__(\n        self,\n        logits: torch.Tensor,\n        labels: torch.Tensor,\n        step_frac: float,\n    ) -> torch.Tensor:\n        preds = torch.softmax(logits, dim=-1)\n        target = torch.pow(preds, self.beta) * torch.pow(labels, self.alpha)\n        target /= target.sum(dim=-1, keepdim=True)\n        target = target.detach()\n        loss = torch.nn.functional.cross_entropy(logits, target, reduction=\"none\")\n        return loss.mean()\nclass logconf_loss_fn(LossFnBase):\n    \"\"\"\n    This class defines a custom loss function for log confidence.",
+        "type": "code",
+        "location": "/weak_to_strong/loss.py:43-73"
+    },
+    "125": {
+        "file_id": 13,
+        "content": "This code defines a custom loss function for log confidence by creating a class named \"logconf_loss_fn\". The function takes in logits and labels as input, calculates the target using softmax, applies a power function based on the defined beta value to the predictions, another power function based on the alpha value to the labels, normalizes the target, and finally calculates the cross entropy loss. This custom loss is then applied for training purposes. The class also includes an optional warmup_frac parameter that can be used during initial training steps.",
+        "type": "comment"
+    },
+    "126": {
+        "file_id": 13,
+        "content": "    Attributes:\n    aux_coef: A float indicating the auxiliary coefficient.\n    warmup_frac: A float indicating the fraction of total training steps for warmup.\n    \"\"\"\n    def __init__(\n        self,\n        aux_coef: float = 0.5,\n        warmup_frac: float = 0.1,  # in terms of fraction of total training steps\n    ):\n        self.aux_coef = aux_coef\n        self.warmup_frac = warmup_frac\n    def __call__(\n        self,\n        logits: torch.Tensor,\n        labels: torch.Tensor,\n        step_frac: float,\n    ) -> torch.Tensor:\n        logits = logits.float()\n        labels = labels.float()\n        coef = 1.0 if step_frac > self.warmup_frac else step_frac\n        coef = coef * self.aux_coef\n        preds = torch.softmax(logits, dim=-1)\n        mean_weak = torch.mean(labels, dim=0)\n        assert mean_weak.shape == (2,)\n        threshold = torch.quantile(preds[:, 0], mean_weak[1])\n        strong_preds = torch.cat(\n            [(preds[:, 0] >= threshold)[:, None], (preds[:, 0] < threshold)[:, None]],\n            dim=1,",
+        "type": "code",
+        "location": "/weak_to_strong/loss.py:75-104"
+    },
+    "127": {
+        "file_id": 13,
+        "content": "This code defines a class for a loss function that takes in logits and labels, applies a softmax function to the logits, calculates a threshold based on the weak labels mean, and then performs classification by comparing the strong label to the calculated threshold. The auxiliary coefficient and warmup fraction can be set during initialization.",
+        "type": "comment"
+    },
+    "128": {
+        "file_id": 13,
+        "content": "        )\n        target = labels * (1 - coef) + strong_preds.detach() * coef\n        loss = torch.nn.functional.cross_entropy(logits, target, reduction=\"none\")\n        return loss.mean()",
+        "type": "code",
+        "location": "/weak_to_strong/loss.py:105-108"
+    },
+    "129": {
+        "file_id": 13,
+        "content": "This code calculates a weighted average of true labels and strong predictions, then applies cross entropy loss to logits and these target values. The result is the mean loss.",
+        "type": "comment"
+    },
+    "130": {
+        "file_id": 14,
+        "content": "/weak_to_strong/model.py",
+        "type": "filepath"
+    },
+    "131": {
+        "file_id": 14,
+        "content": "The code introduces a TransformerWithHead class that inherits from PreTrainedModel, initializes linear head to zeros, and performs forward pass with gradient checkpointing while extracting hidden states and computing logits.",
+        "type": "summary"
+    },
+    "132": {
+        "file_id": 14,
+        "content": "from dataclasses import dataclass\nimport torch\nfrom transformers import AutoConfig, AutoModelForCausalLM, PreTrainedModel\n@dataclass\nclass HeadOutput:\n    logits: torch.FloatTensor\nclass TransformerWithHead(PreTrainedModel):\n    \"\"\"\n    This class initializes the linear head to zeros\n    \"\"\"\n    def __init__(self, name, linear_probe=False, **kwargs):\n        config = AutoConfig.from_pretrained(name, **kwargs)\n        super().__init__(config)\n        self.num_labels = config.num_labels\n        lm = AutoModelForCausalLM.from_pretrained(name, **kwargs)\n        self.lm = lm\n        self.transformer = lm.transformer\n        hidden_size = getattr(config, \"n_embd\", getattr(config, \"hidden_size\", None))\n        self.score = torch.nn.Linear(hidden_size, self.num_labels, bias=False).to(\n            lm.lm_head.weight.dtype\n        )\n        torch.nn.init.normal_(self.score.weight, std=0.0)\n        self.linear_probe = linear_probe\n    @classmethod\n    def from_pretrained(cls, name, **kwargs):\n        return cls(name, **kwargs)",
+        "type": "code",
+        "location": "/weak_to_strong/model.py:1-33"
+    },
+    "133": {
+        "file_id": 14,
+        "content": "This code defines a class called TransformerWithHead that inherits from PreTrainedModel. It initializes the linear head to zeros and has methods for forward pass, loading weights from pre-trained models, etc.",
+        "type": "comment"
+    },
+    "134": {
+        "file_id": 14,
+        "content": "    def gradient_checkpointing_enable(self):\n        model = self.transformer\n        (\n            model if hasattr(model, \"save_pretrained\") else model.module\n        ).gradient_checkpointing_enable()\n    def forward(self, input_ids: torch.LongTensor):\n        \"\"\"\n        Forward pass of the model with a linear head.\n        Parameters:\n        input_ids (torch.LongTensor): Input tensor containing the token ids.\n        Returns:\n        HeadOutput: Output dataclass containing the logits.\n        \"\"\"\n        input_lens = (input_ids != 0).sum(dim=-1)\n        transformer_outputs = self.transformer(input_ids)\n        hidden_states = torch.stack(\n            [transformer_outputs[0][i, input_lens[i] - 1, :] for i in range(len(input_lens))]\n        )\n        self.score.to(hidden_states.device)\n        if self.linear_probe:\n            hidden_states = hidden_states.detach()\n        logits = self.score(hidden_states)\n        return logits",
+        "type": "code",
+        "location": "/weak_to_strong/model.py:35-60"
+    },
+    "135": {
+        "file_id": 14,
+        "content": "The code enables gradient checkpointing and performs a forward pass through the model, extracting hidden states and computing logits.",
+        "type": "comment"
+    },
+    "136": {
+        "file_id": 15,
+        "content": "/weak_to_strong/train.py",
+        "type": "filepath"
+    },
+    "137": {
+        "file_id": 15,
+        "content": "The code trains and saves a model, handles sharded checkpoints, adjusts learning rates, uses data parallelism with multiple GPUs, checks accuracy, logs results, saves unwrapped models, and cleans up memory.",
+        "type": "summary"
+    },
+    "138": {
+        "file_id": 15,
+        "content": "import itertools\nimport os\nimport pickle\nimport time\nfrom dataclasses import dataclass\nfrom typing import Callable, Optional\nimport datasets\nimport numpy as np\nimport torch\nimport torch_optimizer as toptim\nfrom transformers.modeling_utils import load_sharded_checkpoint\nimport weak_to_strong.logger as logger\nfrom weak_to_strong.common import clear_mem\nfrom weak_to_strong.eval import eval_model_acc\nfrom weak_to_strong.loss import xent_loss\nfrom weak_to_strong.model import TransformerWithHead\n@dataclass\nclass ModelConfig:\n    name: str\n    default_lr: float\n    eval_batch_size: int\n    custom_kwargs: Optional[dict] = None\n    gradient_checkpointing: bool = False\n    model_parallel: bool = False\n    default_optimizer: str = \"adam\"\ndef train_model(\n    model: torch.nn.Module,\n    ds: datasets.Dataset,\n    batch_size: int,\n    lr: float = 1e-5,\n    loss_fn: Callable = xent_loss,\n    log_every: int = 10,\n    eval_every: int = 100,\n    eval_batch_size: int = 256,\n    minibatch_size: int = 8,\n    eval_ds: Optional[datasets.Dataset] = None,",
+        "type": "code",
+        "location": "/weak_to_strong/train.py:1-42"
+    },
+    "139": {
+        "file_id": 15,
+        "content": "This code defines a `ModelConfig` class and a function `train_model` which takes in a model, dataset, batch size, learning rate, loss function, logging interval, evaluation interval, evaluation dataset (optional), and trains the model on the given dataset. The code also imports various libraries and classes from other modules.",
+        "type": "comment"
+    },
+    "140": {
+        "file_id": 15,
+        "content": "    gradient_checkpointing: bool = False,\n    train_with_dropout: bool = False,\n    epochs: int = 1,\n    lr_schedule: str = \"cosine_anneal\",\n    optimizer_name: str = \"adam\",\n):\n    print(\"LR\", lr, \"batch_size\", batch_size, \"minibatch_size\", minibatch_size)\n    assert batch_size % minibatch_size == 0, \"batch size must be divisible by minibatch size\"\n    # we purposefully turn off dropout, for determinism\n    # this seems to help for 1 epoch finetuning anyways\n    if train_with_dropout:\n        model.train()\n    else:\n        model.eval()\n    if gradient_checkpointing:\n        (\n            model if hasattr(model, \"gradient_checkpointing_enable\") else model.module\n        ).gradient_checkpointing_enable()\n    nsteps = len(ds) * epochs // batch_size\n    def lr_schedule_fn(step):\n        if lr_schedule == \"constant\":\n            return 1\n        else:\n            assert False, f\"invalid lr schedule, {lr_schedule}, must be constant or cosine_anneal\"\n    if optimizer_name.lower() == \"adam\":\n        optimizer = torch.optim.Adam(model.parameters(), lr=lr)",
+        "type": "code",
+        "location": "/weak_to_strong/train.py:43-71"
+    },
+    "141": {
+        "file_id": 15,
+        "content": "This code is initializing a model for training, setting the learning rate (lr), batch size, and minibatch size. It checks if the batch size is divisible by the minibatch size. If the train_with_dropout flag is True, it turns on dropout in the model, otherwise, it sets the model to evaluation mode. If gradient_checkpointing is enabled, it enables gradient checkpointing. It calculates the number of steps (nsteps) based on the dataset length and number of epochs. Finally, it initializes an optimizer (Adam) with the specified learning rate.",
+        "type": "comment"
+    },
+    "142": {
+        "file_id": 15,
+        "content": "    elif optimizer_name.lower() == \"adafactor\":\n        optimizer = toptim.Adafactor(model.parameters(), lr=lr)\n    else:\n        assert False, f\"invalid optimizer {optimizer_name}, must be adam or adafactor\"\n    if lr_schedule == \"cosine_anneal\":\n        lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, nsteps)\n    else:\n        lr_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_schedule_fn)\n    step = 0\n    it = itertools.chain.from_iterable(itertools.repeat(ds, epochs))\n    losses = []\n    accuracies = []\n    eval_acc_dict = {}\n    # If the model is wrapped by DataParallel, it doesn't have a device. In this case,\n    # we use GPU 0 as the output device. This sadly means that this device will store\n    # a bit more data than other ones, but hopefully should not be too big of a deal.\n    io_device = model.device if hasattr(model, \"device\") else 0\n    while step < nsteps:\n        loss_tot = 0\n        if eval_every and step % eval_every == 0:\n            eval_results = eval_model_acc(model, eval_ds, eval_batch_size)",
+        "type": "code",
+        "location": "/weak_to_strong/train.py:72-94"
+    },
+    "143": {
+        "file_id": 15,
+        "content": "This code checks the optimizer name and initializes either Adafactor or Adam optimizer accordingly. It then sets up the learning rate scheduler based on the given lr_schedule. The code keeps track of loss and accuracy values throughout training and evaluates the model periodically. If the model is wrapped by DataParallel, it uses GPU 0 as the output device.",
+        "type": "comment"
+    },
+    "144": {
+        "file_id": 15,
+        "content": "            if gradient_checkpointing:\n                (\n                    model if hasattr(model, \"gradient_checkpointing_enable\") else model.module\n                ).gradient_checkpointing_enable()\n            if train_with_dropout:\n                model.train()\n            eval_accs = np.mean([r[\"acc\"] for r in eval_results])\n            eval_acc_dict[step] = eval_accs\n            logger.logkv(\"eval_accuracy\", eval_accs)\n        all_logits = []\n        all_labels = []\n        for i in range(batch_size // minibatch_size):\n            try:\n                mbatch = [next(it) for _ in range(minibatch_size)]\n            except StopIteration:\n                break\n            input_ids = (\n                torch.nn.utils.rnn.pad_sequence([torch.tensor(ex[\"input_ids\"]) for ex in mbatch])\n                .transpose(\n                    0,\n                    1,\n                )\n                .to(io_device)\n            )\n            labels = torch.tensor([ex[\"soft_label\"] for ex in mbatch]).to(io_device)\n            logits = model(input_ids)",
+        "type": "code",
+        "location": "/weak_to_strong/train.py:95-121"
+    },
+    "145": {
+        "file_id": 15,
+        "content": "Checks if gradient checkpointing is enabled and enables it if true.\nEnables dropout training for the model.\nCalculates the mean accuracy from evaluation results.\nLogs the evaluation accuracy in the logger.\nInitializes empty lists for storing all logits and labels.\nIterates through mini-batches, padding input_ids, and collecting logits and labels.",
+        "type": "comment"
+    },
+    "146": {
+        "file_id": 15,
+        "content": "            all_logits.extend(logits.to(io_device))\n            all_labels.extend(labels)\n        all_logits = torch.stack(all_logits)\n        all_labels = torch.stack(all_labels)\n        loss = loss_fn(all_logits, all_labels, step_frac=step / nsteps)\n        loss_tot += loss.item()\n        loss.backward()\n        losses.append(loss_tot)\n        accuracies.append(\n            torch.mean(\n                (torch.argmax(all_logits, dim=1) == torch.argmax(all_labels, dim=1)).to(\n                    torch.float32\n                )\n            ).item()\n        )\n        logger.logkvs(\n            {\n                \"step\": step,\n                \"progress\": step / nsteps,\n                \"loss\": loss_tot,\n                \"train_accuracy\": accuracies[-1],\n                \"lr\": lr_scheduler.get_last_lr()[0],\n            }\n        )\n        optimizer.step()\n        optimizer.zero_grad()\n        lr_scheduler.step()\n        if log_every and step % log_every == 0:\n            print(\n                f\"Step: {step}/{nsteps} Recent losses: {np.mean(losses)} {np.mean(accuracies)} {len(losses)}\"",
+        "type": "code",
+        "location": "/weak_to_strong/train.py:123-152"
+    },
+    "147": {
+        "file_id": 15,
+        "content": "This code is training a model by calculating the loss and accuracy, logging progress, updating the optimizer, and scheduling learning rate adjustments.",
+        "type": "comment"
+    },
+    "148": {
+        "file_id": 15,
+        "content": "            )\n            losses = []\n            accuracies = []\n        step += 1\n        logger.dumpkvs()\n    final_eval_results = None\n    if eval_every:\n        print(\"Final evaluation:\")\n        final_eval_results = eval_model_acc(model, eval_ds, eval_batch_size)\n        logger.logkv(\"eval_accuracy\", np.mean([r[\"acc\"] for r in final_eval_results]))\n        logger.dumpkvs()\n    return final_eval_results\ndef train_and_save_model(\n    model_config: ModelConfig,\n    train_ds: datasets.Dataset,\n    test_ds: datasets.Dataset,\n    inference_ds: Optional[datasets.Dataset] = None,\n    *,\n    batch_size: int,\n    lr: float,\n    epochs: int,\n    eval_batch_size: Optional[int] = None,\n    minibatch_size_per_device: Optional[int] = None,\n    save_path: Optional[str] = None,\n    loss_fn: Callable = xent_loss,\n    label: str = \"default\",\n    force_retrain: bool = False,\n    train_with_dropout: bool = False,\n    linear_probe: bool = False,\n    lr_schedule: str = \"constant\",\n    optimizer_name: str = \"adam\",\n    eval_every: Optional[int] = None,",
+        "type": "code",
+        "location": "/weak_to_strong/train.py:153-186"
+    },
+    "149": {
+        "file_id": 15,
+        "content": "Training and saving a model with specified configuration, training dataset, test dataset, optional inference dataset, batch size, learning rate, number of epochs, evaluation batch size (optional), mini-batch size per device (optional), save path (optional), loss function, label (default), force retraining (bool), train with dropout (bool), linear probe (bool), learning rate schedule (str), optimizer name (str), and evaluation interval (optional).",
+        "type": "comment"
+    },
+    "150": {
+        "file_id": 15,
+        "content": "):\n    if eval_batch_size is None:\n        eval_batch_size = batch_size\n    if minibatch_size_per_device is None:\n        minibatch_size_per_device = 1\n    gradient_checkpointing = model_config.gradient_checkpointing\n    custom_kwargs = model_config.custom_kwargs or {}\n    def maybe_load_model(model):\n        if os.path.exists(os.path.join(save_path, \"results.pkl\")) and not force_retrain:\n            print(\"loading from\", save_path)\n            checkpoint_path = os.path.join(save_path, \"pytorch_model.bin\")\n            if not os.path.exists(checkpoint_path):\n                # Assume this means we have a sharded checkpoint, and load it appropriately\n                load_sharded_checkpoint(model, checkpoint_path)\n            else:\n                state_dict = torch.load(os.path.join(save_path, \"pytorch_model.bin\"))\n                state_dict = {\n                    k.replace(\"transformer.module\", \"transformer\"): v\n                    for (k, v) in state_dict.items()\n                }\n                custom_kwargs[\"state_dict\"] = state_dict",
+        "type": "code",
+        "location": "/weak_to_strong/train.py:187-210"
+    },
+    "151": {
+        "file_id": 15,
+        "content": "This code checks if the model exists and loads it from the save path if not forcing retraining. It also handles sharded checkpoints by loading them appropriately and updates the state_dict to match the correct module names.",
+        "type": "comment"
+    },
+    "152": {
+        "file_id": 15,
+        "content": "            return True\n        return False\n    already_trained = False\n    # Load the model\n    if model_config.model_parallel:\n        assert torch.cuda.device_count() > 1, f\"you might want more gpus for {model_config.name}\"\n        model = TransformerWithHead.from_pretrained(\n            model_config.name,\n            num_labels=2,\n            device_map=\"auto\",\n            linear_probe=linear_probe,\n            **custom_kwargs,\n        )\n        already_trained = maybe_load_model(model)\n        # slight misnomer, more like minibatch_size_per_dp_replica\n        minibatch_size = minibatch_size_per_device\n    else:\n        model = TransformerWithHead.from_pretrained(\n            model_config.name, num_labels=2, linear_probe=linear_probe, **custom_kwargs\n        ).to(\"cuda\")\n        already_trained = maybe_load_model(model)\n        # data parallel:  currently not supported with model parallel\n        if torch.cuda.device_count() > 1:\n            model = torch.nn.DataParallel(model, output_device=0)\n            minibatch_size = min(minibatch_size_per_device * torch.cuda.device_count(), batch_size)",
+        "type": "code",
+        "location": "/weak_to_strong/train.py:211-236"
+    },
+    "153": {
+        "file_id": 15,
+        "content": "This code is setting up the model configuration and loading the model. It checks if the device count is greater than 1, creates a TransformerWithHead model with two labels and the specified custom arguments. It then checks if the model has already been trained and sets the mini-batch size accordingly based on the device count. If there are multiple GPUs, it uses data parallelism by wrapping the model in torch.nn.DataParallel.",
+        "type": "comment"
+    },
+    "154": {
+        "file_id": 15,
+        "content": "            print(\n                \"Using\",\n                torch.cuda.device_count(),\n                \"GPUs, setting minibatch_size to\",\n                minibatch_size,\n            )\n    if already_trained:\n        test_results = eval_model_acc(model, test_ds, eval_batch_size)\n    else:\n        start = time.time()\n        test_results = train_model(\n            model,\n            train_ds,\n            batch_size,\n            lr=lr,\n            epochs=epochs,\n            eval_ds=test_ds,\n            gradient_checkpointing=gradient_checkpointing,\n            loss_fn=loss_fn,\n            eval_batch_size=eval_batch_size,\n            eval_every=eval_every,\n            minibatch_size=minibatch_size,\n            train_with_dropout=train_with_dropout,\n            lr_schedule=lr_schedule,\n            optimizer_name=optimizer_name,\n        )\n        print(\"Model training took\", time.time() - start, \"seconds\")\n        if save_path:\n            # Note: If the model is wrapped by DataParallel, we need to unwrap it before saving",
+        "type": "code",
+        "location": "/weak_to_strong/train.py:237-266"
+    },
+    "155": {
+        "file_id": 15,
+        "content": "The code is checking if the model has already been trained. If it has, it evaluates the model's accuracy on the test dataset (test_results). If not, it trains the model using the specified parameters and evaluates its performance on the test dataset after training is complete (train_model function). The time taken for model training is also printed. Additionally, if a save path is provided, the code unwraps the model before saving it (if wrapped by DataParallel).",
+        "type": "comment"
+    },
+    "156": {
+        "file_id": 15,
+        "content": "            (model if hasattr(model, \"save_pretrained\") else model.module).save_pretrained(\n                save_path\n            )\n            print(\"saved\", save_path)\n    inference_results = None\n    if inference_ds:\n        inference_results = eval_model_acc(model, inference_ds, eval_batch_size)\n        logger.logkv(\"inference_accuracy\", np.mean([r[\"acc\"] for r in inference_results]))\n    if save_path:\n        with open(os.path.join(save_path, \"results.pkl\"), \"wb\") as f:\n            pickle.dump(\n                {\n                    \"avg_acc_test\": float(np.mean([r[\"acc\"] for r in test_results])),\n                    \"avg_acc_inference\": float(\n                        np.mean([r[\"acc\"] for r in inference_results] if inference_results else [])\n                    ),\n                    \"test_results\": test_results,\n                    \"inference_results\": inference_results if inference_results else [],\n                },\n                f,\n            )\n    # try to clean up memory\n    clear_mem()\n    logger.shutdown()",
+        "type": "code",
+        "location": "/weak_to_strong/train.py:267-292"
+    },
+    "157": {
+        "file_id": 15,
+        "content": "Saving the model and results to disk, logging inference accuracy, and cleaning up memory",
+        "type": "comment"
+    },
+    "158": {
+        "file_id": 15,
+        "content": "    return test_results, inference_results",
+        "type": "code",
+        "location": "/weak_to_strong/train.py:294-294"
+    },
+    "159": {
+        "file_id": 15,
+        "content": "Returns test and inference results.",
+        "type": "comment"
+    }
+}

@@ -1,0 +1,10 @@
+{
+    "summary": "This code imports necessary libraries and defines a transformation pipeline for image data. It also creates a function to load ImageNet dataset with optional parameters for data shuffling, batch size, and applying transformations.",
+    "details": [
+        {
+            "comment": "This code imports necessary libraries and defines a transformation pipeline for image data. It also creates a function to load ImageNet dataset with optional parameters for data shuffling, batch size, and applying transformations.",
+            "location": "\"/media/root/Toshiba XG3/works/weak-to-strong/docs/src/vision/data.py\":0-17",
+            "content": "import torch\nimport torchvision\nRESIZE, CROP = 256, 224\nTRANSFORM = torchvision.transforms.Compose(\n    [\n        torchvision.transforms.Resize(RESIZE),\n        torchvision.transforms.CenterCrop(CROP),\n        torchvision.transforms.ToTensor(),\n        torchvision.transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),\n    ]\n)\ndef get_imagenet(datapath, split, batch_size, shuffle, transform=TRANSFORM):\n    ds = torchvision.datasets.ImageNet(root=datapath, split=split, transform=transform)\n    loader = torch.utils.data.DataLoader(ds, shuffle=shuffle, batch_size=batch_size)\n    return ds, loader"
+        }
+    ]
+}

@@ -1,0 +1,10 @@
+{
+    "summary": "This code is using Hatch as the build system and specifies dependencies for a Python project named \"weak_to_strong\" with version 0.0.1. The authors are credited to OpenAI, and it requires Python >=3.7. The dependencies include torch, numpy, transformers, datasets, fire, accelerate, transformers-stream-generator, torch_optimizer, and wandb.",
+    "details": [
+        {
+            "comment": "This code is using Hatch as the build system and specifies dependencies for a Python project named \"weak_to_strong\" with version 0.0.1. The authors are credited to OpenAI, and it requires Python >=3.7. The dependencies include torch, numpy, transformers, datasets, fire, accelerate, transformers-stream-generator, torch_optimizer, and wandb.",
+            "location": "\"/media/root/Toshiba XG3/works/weak-to-strong/docs/src/pyproject.toml\":0-28",
+            "content": "[build-system]\nrequires = [\"hatchling\"]\nbuild-backend = \"hatchling.build\"\n[project]\nname = \"weak_to_strong\"\nversion = \"0.0.1\"\nauthors = [\n  { name=\"OpenAI\", email=\"generalization@openai.com\" },\n]\ndescription = \"Weak-to-strong generalization\"\nreadme = \"README.md\"\nrequires-python = \">=3.7\"\nclassifiers = [\n    \"Programming Language :: Python :: 3\",\n    \"License :: OSI Approved :: MIT License\",\n    \"Operating System :: OS Independent\",\n]\ndependencies=[\n  \"torch ~= 2.1\",\n  \"numpy ~= 1.24\",\n  \"transformers ~= 4.36\",\n  \"datasets ~= 2.14\",\n  \"fire ~= 0.4\",\n  \"accelerate ~= 0.25\",\n  \"transformers-stream-generator ~= 0.0.4\",\n  \"torch_optimizer ~= 0.3\",\n  \"wandb ~= 0.16.1\"\n]"
+        }
+    ]
+}

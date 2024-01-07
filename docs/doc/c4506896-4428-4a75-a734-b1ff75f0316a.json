@@ -1,0 +1,15 @@
+{
+    "summary": "The code has two functions: get_tokenizer for returning a tokenizer based on the model name, and clear_mem for clearing PyTorch memory by using garbage collector and handling exceptions while checking for tensors in garbage collector's objects.",
+    "details": [
+        {
+            "comment": "This code contains two functions: \"get_tokenizer\" and \"clear_mem\". The get_tokenizer function returns a tokenizer based on the given model name. The clear_mem function is used to clear PyTorch memory by calling the garbage collector and printing the current amount of allocated memory post-clean.",
+            "location": "\"/media/root/Toshiba XG3/works/weak-to-strong/docs/src/weak_to_strong/common.py\":0-39",
+            "content": "import gc\nimport torch\nfrom transformers import AutoTokenizer\ndef get_tokenizer(model_name: str):\n    \"\"\"\n    This function returns a tokenizer based on the model name.\n    Parameters:\n    model_name: The name of the model for which the tokenizer is needed.\n    Returns:\n    A tokenizer for the specified model.\n    \"\"\"\n    return AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)\ndef clear_mem(verbose: bool = False):\n    \"\"\"\n    This function is used to clear the memory allocated by PyTorch.\n    It does so by calling the garbage collector to release unused GPU memory.\n    After clearing the memory, it prints the current amount of memory still allocated by PyTorch (post-clean).\n    Parameters:\n    verbose (bool): Whether to print additional information.\n    \"\"\"\n    gc.collect()\n    torch.cuda.empty_cache()\n    print(\n        f\"torch.cuda.memory_allocated: {torch.cuda.memory_allocated(0) / 1024**3:.2f}GB\"\n    )\n    if verbose:\n        def try_attr(x, a):\n            try:\n                return getattr(x, a)"
+        },
+        {
+            "comment": "Handling various exceptions and checking for tensors in the garbage collector's objects.",
+            "location": "\"/media/root/Toshiba XG3/works/weak-to-strong/docs/src/weak_to_strong/common.py\":40-47",
+            "content": "            except:\n                # amazing that this can cause...\n                # (AttributeError, OSError, AssertionError, RuntimeError, ModuleNotFoundError)\n                return None\n        for obj in gc.get_objects():\n            if torch.is_tensor(obj) or torch.is_tensor(try_attr(obj, \"data\")):\n                print(type(obj), obj.size(), obj.dtype)"
+        }
+    ]
+}

@@ -1,0 +1,15 @@
+{
+    "summary": "The code introduces a TransformerWithHead class that inherits from PreTrainedModel, initializes linear head to zeros, and performs forward pass with gradient checkpointing while extracting hidden states and computing logits.",
+    "details": [
+        {
+            "comment": "This code defines a class called TransformerWithHead that inherits from PreTrainedModel. It initializes the linear head to zeros and has methods for forward pass, loading weights from pre-trained models, etc.",
+            "location": "\"/media/root/Toshiba XG3/works/weak-to-strong/docs/src/weak_to_strong/model.py\":0-32",
+            "content": "from dataclasses import dataclass\nimport torch\nfrom transformers import AutoConfig, AutoModelForCausalLM, PreTrainedModel\n@dataclass\nclass HeadOutput:\n    logits: torch.FloatTensor\nclass TransformerWithHead(PreTrainedModel):\n    \"\"\"\n    This class initializes the linear head to zeros\n    \"\"\"\n    def __init__(self, name, linear_probe=False, **kwargs):\n        config = AutoConfig.from_pretrained(name, **kwargs)\n        super().__init__(config)\n        self.num_labels = config.num_labels\n        lm = AutoModelForCausalLM.from_pretrained(name, **kwargs)\n        self.lm = lm\n        self.transformer = lm.transformer\n        hidden_size = getattr(config, \"n_embd\", getattr(config, \"hidden_size\", None))\n        self.score = torch.nn.Linear(hidden_size, self.num_labels, bias=False).to(\n            lm.lm_head.weight.dtype\n        )\n        torch.nn.init.normal_(self.score.weight, std=0.0)\n        self.linear_probe = linear_probe\n    @classmethod\n    def from_pretrained(cls, name, **kwargs):\n        return cls(name, **kwargs)"
+        },
+        {
+            "comment": "The code enables gradient checkpointing and performs a forward pass through the model, extracting hidden states and computing logits.",
+            "location": "\"/media/root/Toshiba XG3/works/weak-to-strong/docs/src/weak_to_strong/model.py\":34-59",
+            "content": "    def gradient_checkpointing_enable(self):\n        model = self.transformer\n        (\n            model if hasattr(model, \"save_pretrained\") else model.module\n        ).gradient_checkpointing_enable()\n    def forward(self, input_ids: torch.LongTensor):\n        \"\"\"\n        Forward pass of the model with a linear head.\n        Parameters:\n        input_ids (torch.LongTensor): Input tensor containing the token ids.\n        Returns:\n        HeadOutput: Output dataclass containing the logits.\n        \"\"\"\n        input_lens = (input_ids != 0).sum(dim=-1)\n        transformer_outputs = self.transformer(input_ids)\n        hidden_states = torch.stack(\n            [transformer_outputs[0][i, input_lens[i] - 1, :] for i in range(len(input_lens))]\n        )\n        self.score.to(hidden_states.device)\n        if self.linear_probe:\n            hidden_states = hidden_states.detach()\n        logits = self.score(hidden_states)\n        return logits"
+        }
+    ]
+}

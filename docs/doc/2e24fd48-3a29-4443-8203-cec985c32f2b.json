@@ -1,0 +1,20 @@
+{
+    "summary": "The WandbLogger class, which interacts with the Weights & Biases logging system and provides methods for logging, dumping data, configuring, and shutdown functionality.",
+    "details": [
+        {
+            "comment": "The code defines a `WandbLogger` class that initializes and interacts with the Weights & Biases (W&B) logging system. It also includes a function `append_to_jsonl()` for appending data to a JSONL file. The logger sets up the W&B project if needed and allows saving logs in a specified path as a JSONL file.",
+            "location": "\"/media/root/Toshiba XG3/works/weak-to-strong/docs/src/weak_to_strong/logger.py\":0-40",
+            "content": "import json\nimport os\nfrom datetime import datetime\nimport wandb\ndef append_to_jsonl(path: str, data: dict):\n    with open(path, \"a\") as f:\n        f.write(json.dumps(data) + \"\\n\")\nclass WandbLogger(object):\n    CURRENT = None\n    log_path = None\n    def __init__(\n        self,\n        **kwargs,\n    ):\n        project = os.environ.get(\"WANDB_PROJECT\")\n        self.use_wandb = project is not None\n        if self.use_wandb:\n            wandb.init(\n                config=kwargs,\n                project=project,\n                name=kwargs[\"name\"].format(\n                    **kwargs, datetime_now=datetime.now().strftime(\"%Y-%m-%d_%H-%M-%S\")\n                )\n                if \"name\" in kwargs\n                else None,\n            )\n        if \"save_path\" in kwargs:\n            self.log_path = os.path.join(kwargs[\"save_path\"], \"log.jsonl\")\n            if not os.path.exists(kwargs[\"save_path\"]):\n                os.makedirs(kwargs[\"save_path\"])\n        self._log_dict = {}\n    def logkv(self, key, value):\n        self._log_dict[key] = value"
+        },
+        {
+            "comment": "This code defines a class \"WandbLogger\" with methods to log and dump key-value pairs, configure the logger, and assert if the logger is configured. The main function is the \"configure\" method which ensures only one instance of WandbLogger exists at any given time by shutting down any existing instances before creating a new one.",
+            "location": "\"/media/root/Toshiba XG3/works/weak-to-strong/docs/src/weak_to_strong/logger.py\":42-85",
+            "content": "    def logkvs(self, d):\n        self._log_dict.update(d)\n    def dumpkvs(self):\n        if self.use_wandb:\n            wandb.log(self._log_dict)\n        if self.log_path is not None:\n            append_to_jsonl(self.log_path, self._log_dict)\n        self._log_dict = {}\n    def shutdown(self):\n        if self.use_wandb:\n            wandb.finish()\ndef is_configured():\n    return WandbLogger.CURRENT is not None\ndef get_current():\n    assert is_configured(), \"WandbLogger is not configured\"\n    return WandbLogger.CURRENT\ndef configure(**kwargs):\n    if is_configured():\n        WandbLogger.CURRENT.shutdown()\n    WandbLogger.CURRENT = WandbLogger(**kwargs)\n    return WandbLogger.CURRENT\ndef logkv(key, value):\n    assert is_configured(), \"WandbLogger is not configured\"\n    WandbLogger.CURRENT.logkv(key, value)\ndef logkvs(d):\n    assert is_configured(), \"WandbLogger is not configured\"\n    WandbLogger.CURRENT.logkvs(d)\ndef dumpkvs():\n    assert is_configured(), \"WandbLogger is not configured\"\n    WandbLogger.CURRENT.dumpkvs()"
+        },
+        {
+            "comment": "The \"shutdown\" function asserts that WandbLogger is configured, then calls its shutdown method, and sets the current logger to None.",
+            "location": "\"/media/root/Toshiba XG3/works/weak-to-strong/docs/src/weak_to_strong/logger.py\":88-91",
+            "content": "def shutdown():\n    assert is_configured(), \"WandbLogger is not configured\"\n    WandbLogger.CURRENT.shutdown()\n    WandbLogger.CURRENT = None"
+        }
+    ]
+}
