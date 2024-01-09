@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="github-markdown.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .directory:hover {
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        :target {
+            background-color: yellow !important;
+        }
+
+        .folded::before {
+            content: '\25B6';
+            margin-right: 8px;
+            /* Add space between marker and text */
+        }
+
+        .expanded::before {
+            content: '\25BC';
+            margin-right: 8px;
+            /* Add space between marker and text */
+        }
+    </style>
+    <script>
+        function toggleVisibility(element) {
+            let mclass = element.getAttribute("class");
+            if (mclass == "expanded") {
+                element.setAttribute('class', 'folded');
+            } else {
+                element.setAttribute('class', 'expanded');
+            }
+            const siblings = element.parentNode.children;
+            for (const sibling of siblings) {
+                if (sibling !== element) {
+                    sibling.style.display = (sibling.style.display === 'none') ? 'block' : 'none';
+                }
+            }
+        }
+    </script>
+    <style>
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+        }
+
+        @media (max-width: 767px) {
+            .markdown-body {
+                padding: 15px;
+            }
+
+            .partial-repository-url {
+                display: none;
+            }
+        }
+
+        ul {
+            list-style: none;
+        }
+    </style>
+</head>
+
+<body>
+    <article class="markdown-body">
+        <h2>Project Structure<span hierarchy="0" class="partial-repository-url"> of: openai/weak-to-strong</span><div style="float: right;"><a href="index.html"><i class="bi bi-search"></i></a></div></h2>
+<ul>
+<li><span hierarchy="0" class="expanded" onclick="toggleVisibility(this)" ><strong class="directory" id="/"><code>weak-to-strong</code></strong> <em>Weak-to-strong learning experiments with language and vision tasks.</em></span><ul>
+<li><a href="index.html?q=/README.md" id="/README.md"><code>README.md</code></a> <em>Weak-to-strong learning setup for binary tasks, using pretrained language models and various loss functions.</em></li>
+<li><span hierarchy="1" class="expanded" onclick="toggleVisibility(this)" ><strong class="directory" id="/notebooks/"><code>notebooks</code></strong></span><ul>
+<li><a href="index.html?q=/notebooks/Plotting.py" id="/notebooks/Plotting.py"><code>Plotting.py</code></a> <em>Python script for data plotting and analysis.</em></li>
+</ul>
+</li>
+<li><a href="index.html?q=/pyproject.toml" id="/pyproject.toml"><code>pyproject.toml</code></a> <em>Python project using Hatch, depends on OpenAI's "weak_to_strong" with torch, numpy.</em></li>
+<li><a href="index.html?q=/setup.py" id="/setup.py"><code>setup.py</code></a> <em>Sets up Python package with setuptools</em></li>
+<li><a href="index.html?q=/train_weak_to_strong.py" id="/train_weak_to_strong.py"><code>train_weak_to_strong.py</code></a> <em>Trains weak models to strong, compares performance, stores results.</em></li>
+<li><span hierarchy="1" class="expanded" onclick="toggleVisibility(this)" ><strong class="directory" id="/vision/"><code>vision</code></strong> <em>Experiments weak-to-strong learning on ImageNet using various models with data pipeline and logistic regression.</em></span><ul>
+<li><a href="index.html?q=/vision/README.md" id="/vision/README.md"><code>README.md</code></a> <em>Experiments weak-to-strong learning on ImageNet with various models</em></li>
+<li><a href="index.html?q=/vision/data.py" id="/vision/data.py"><code>data.py</code></a> <em>Image data pipeline for ImageNet dataset</em></li>
+<li><a href="index.html?q=/vision/models.py" id="/vision/models.py"><code>models.py</code></a> <em>Deep learning models creation and modification.</em></li>
+<li><a href="index.html?q=/vision/run_weak_strong.py" id="/vision/run_weak_strong.py"><code>run_weak_strong.py</code></a> <em>Trains logistic regression model with weak and strong labels, evaluates accuracy.</em></li>
+</ul>
+</li>
+<li><span hierarchy="1" class="expanded" onclick="toggleVisibility(this)" ><strong class="directory" id="/weak_to_strong/"><code>weak_to_strong</code></strong> <em>Weak to strong contrastive learning for data augmentation.</em></span><ul>
+<li><a href="index.html?q=/weak_to_strong/common.py" id="/weak_to_strong/common.py"><code>common.py</code></a> <em>PyTorch tokenizer &amp; memory clear functions</em></li>
+<li><a href="index.html?q=/weak_to_strong/datasets.py" id="/weak_to_strong/datasets.py"><code>datasets.py</code></a> <em>Load, split, tokenize datasets in DatasetConfig class.</em></li>
+<li><a href="index.html?q=/weak_to_strong/eval.py" id="/weak_to_strong/eval.py"><code>eval.py</code></a> <em>Evaluates model accuracy on dataset with batches.</em></li>
+<li><a href="index.html?q=/weak_to_strong/logger.py" id="/weak_to_strong/logger.py"><code>logger.py</code></a> <em>WandbLogger: Weights &amp; Biases logging, dumping, configuring.</em></li>
+<li><a href="index.html?q=/weak_to_strong/loss.py" id="/weak_to_strong/loss.py"><code>loss.py</code></a> <em>Loss function base class with custom loss functions.</em></li>
+<li><a href="index.html?q=/weak_to_strong/model.py" id="/weak_to_strong/model.py"><code>model.py</code></a> <em>Transformer model with linear head</em></li>
+<li><a href="index.html?q=/weak_to_strong/train.py" id="/weak_to_strong/train.py"><code>train.py</code></a> <em>Trains and saves model, manages GPUs, checks accuracy, logs results.</em></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+    </article>
+    <script type="text/javascript">
+        function getQueryParams() {
+            var search = window.location.search.substring(1); // Remove leading '?'
+            var queryParams = {};
+            search.split('&').forEach(function (pair) {
+                var parts = pair.split('=');
+                var key = decodeURIComponent(parts[0]);
+                var value = decodeURIComponent(parts[1]);
+                queryParams[key] = value;
+            });
+            return queryParams;
+        }
+
+        const queryParams = getQueryParams(window.location.search);
+        const show_full = queryParams.full == "true";
+        if (!show_full) {
+            const spans = document.querySelectorAll('span');
+            for (let span of spans) {
+                if (span.getAttribute("hierarchy") == '0') { continue }
+
+                toggleVisibility(span);
+            }
+        }
+    </script>
+</body>
+
+</html>

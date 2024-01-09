@@ -1,13 +1,13 @@
 {
     "url": {
-        "full": "https://github.com/james4ever0/weak-to-strong",
-        "partial": "james4ever0/weak-to-strong"
+        "full": "https://github.com/openai/weak-to-strong",
+        "partial": "openai/weak-to-strong"
     },
     "file_mapping": {
         "0": {
             "filepath": "/README.md",
             "entry_id": 0,
-            "language_id": "plain-text"
+            "language_id": "markdown"
         },
         "1": {
             "filepath": "/pyproject.toml",
