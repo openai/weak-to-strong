@@ -90,7 +90,7 @@ def train_model(
 
     while step < nsteps:
         loss_tot = 0
-        if eval_every and step % eval_every == 0:
+        if eval_every and (step + 1) % eval_every == 0:
             eval_results = eval_model_acc(model, eval_ds, eval_batch_size)
             if gradient_checkpointing:
                 (
@@ -240,6 +240,8 @@ def train_and_save_model(
                 "GPUs, setting minibatch_size to",
                 minibatch_size,
             )
+        else:
+            minibatch_size = minibatch_size_per_device
 
     if already_trained:
         test_results = eval_model_acc(model, test_ds, eval_batch_size)
