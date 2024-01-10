@@ -1,6 +1,7 @@
 import json
 import os
 from datetime import datetime
+from typing import Optional
 
 import wandb
 
@@ -11,7 +12,7 @@ def append_to_jsonl(path: str, data: dict):
 
 
 class WandbLogger(object):
-    CURRENT = None
+    CURRENT: Optional["WandbLogger"] = None
 
     log_path = None
 
@@ -66,27 +67,27 @@ def get_current():
 
 def configure(**kwargs):
     if is_configured():
-        WandbLogger.CURRENT.shutdown()
+        WandbLogger.CURRENT.shutdown()  # type: ignore
     WandbLogger.CURRENT = WandbLogger(**kwargs)
     return WandbLogger.CURRENT
 
 
 def logkv(key, value):
     assert is_configured(), "WandbLogger is not configured"
-    WandbLogger.CURRENT.logkv(key, value)
+    WandbLogger.CURRENT.logkv(key, value)  # type: ignore
 
 
 def logkvs(d):
     assert is_configured(), "WandbLogger is not configured"
-    WandbLogger.CURRENT.logkvs(d)
+    WandbLogger.CURRENT.logkvs(d)  # type: ignore
 
 
 def dumpkvs():
     assert is_configured(), "WandbLogger is not configured"
-    WandbLogger.CURRENT.dumpkvs()
+    WandbLogger.CURRENT.dumpkvs()  # type: ignore
 
 
 def shutdown():
     assert is_configured(), "WandbLogger is not configured"
-    WandbLogger.CURRENT.shutdown()
+    WandbLogger.CURRENT.shutdown()  # type: ignore
     WandbLogger.CURRENT = None

@@ -36,7 +36,7 @@ def train_model(
     lr: float = 1e-5,
     loss_fn: Callable = xent_loss,
     log_every: int = 10,
-    eval_every: int = 100,
+    eval_every: Optional[int] = None,
     eval_batch_size: int = 256,
     minibatch_size: int = 8,
     eval_ds: Optional[datasets.Dataset] = None,
@@ -47,7 +47,9 @@ def train_model(
     optimizer_name: str = "adam",
 ):
     print("LR", lr, "batch_size", batch_size, "minibatch_size", minibatch_size)
-    assert batch_size % minibatch_size == 0, "batch size must be divisible by minibatch size"
+    assert (
+        batch_size % minibatch_size == 0
+    ), "batch size must be divisible by minibatch size"
     # we purposefully turn off dropout, for determinism
     # this seems to help for 1 epoch finetuning anyways
     if train_with_dropout:
@@ -65,7 +67,9 @@ def train_model(
         if lr_schedule == "constant":
             return 1
         else:
-            assert False, f"invalid lr schedule, {lr_schedule}, must be constant or cosine_anneal"
+            assert (
+                False
+            ), f"invalid lr schedule, {lr_schedule}, must be constant or cosine_anneal"
 
     if optimizer_name.lower() == "adam":
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
@@ -91,14 +95,17 @@ def train_model(
     while step < nsteps:
         loss_tot = 0
         if eval_every and (step + 1) % eval_every == 0:
+            assert eval_ds is not None, "must provide eval_ds if eval_every is not None"
             eval_results = eval_model_acc(model, eval_ds, eval_batch_size)
             if gradient_checkpointing:
                 (
-                    model if hasattr(model, "gradient_checkpointing_enable") else model.module
+                    model
+                    if hasattr(model, "gradient_checkpointing_enable")
+                    else model.module
                 ).gradient_checkpointing_enable()
             if train_with_dropout:
                 model.train()
-            eval_accs = np.mean([r["acc"] for r in eval_results])
+            eval_accs = np.mean([r["acc"] for r in eval_results])  # type: ignore
             eval_acc_dict[step] = eval_accs
             logger.logkv("eval_accuracy", eval_accs)
         all_logits = []
@@ -109,14 +116,16 @@ def train_model(
             except StopIteration:
                 break
             input_ids = (
-                torch.nn.utils.rnn.pad_sequence([torch.tensor(ex["input_ids"]) for ex in mbatch])
+                torch.nn.utils.rnn.pad_sequence(
+                    [torch.tensor(ex["input_ids"]) for ex in mbatch]  # type: ignore
+                )
                 .transpose(
                     0,
                     1,
                 )
-                .to(io_device)
+                .to(io_device)  # type: ignore
             )
-            labels = torch.tensor([ex["soft_label"] for ex in mbatch]).to(io_device)
+            labels = torch.tensor([ex["soft_label"] for ex in mbatch]).to(io_device)  # type: ignore
 
             logits = model(input_ids)
 
@@ -149,7 +158,8 @@ def train_model(
         lr_scheduler.step()
         if log_every and step % log_every == 0:
             print(
-                f"Step: {step}/{nsteps} Recent losses: {np.mean(losses)} {np.mean(accuracies)} {len(losses)}"
+                f"Step: {step}/{nsteps} Recent losses: {np.mean(losses)} {np.mean(accuracies)} "
+                "{len(losses)}"
             )
             losses = []
             accuracies = []
@@ -158,8 +168,11 @@ def train_model(
     final_eval_results = None
     if eval_every:
         print("Final evaluation:")
+        assert eval_ds is not None, "must provide eval_ds if eval_every is not None"
         final_eval_results = eval_model_acc(model, eval_ds, eval_batch_size)
-        logger.logkv("eval_accuracy", np.mean([r["acc"] for r in final_eval_results]))
+        logger.logkv(
+            "eval_accuracy", np.mean([r["acc"] for r in final_eval_results])  # type: ignore
+        )  # type: ignore
         logger.dumpkvs()
     return final_eval_results
 
@@ -173,18 +186,17 @@ def train_and_save_model(
     batch_size: int,
     lr: float,
     epochs: int,
+    save_path: str,
     eval_batch_size: Optional[int] = None,
     minibatch_size_per_device: Optional[int] = None,
-    save_path: Optional[str] = None,
     loss_fn: Callable = xent_loss,
-    label: str = "default",
     force_retrain: bool = False,
     train_with_dropout: bool = False,
     linear_probe: bool = False,
     lr_schedule: str = "constant",
     optimizer_name: str = "adam",
     eval_every: Optional[int] = None,
-):
+) -> tuple:
     if eval_batch_size is None:
         eval_batch_size = batch_size
 
@@ -214,7 +226,9 @@ def train_and_save_model(
     already_trained = False
     # Load the model
     if model_config.model_parallel:
-        assert torch.cuda.device_count() > 1, f"you might want more gpus for {model_config.name}"
+        assert (
+            torch.cuda.device_count() > 1
+        ), f"you might want more gpus for {model_config.name}"
         model = TransformerWithHead.from_pretrained(
             model_config.name,
             num_labels=2,
@@ -228,12 +242,16 @@ def train_and_save_model(
     else:
         model = TransformerWithHead.from_pretrained(
             model_config.name, num_labels=2, linear_probe=linear_probe, **custom_kwargs
-        ).to("cuda")
+        ).to(
+            "cuda"  # type: ignore
+        )
         already_trained = maybe_load_model(model)
         # data parallel:  currently not supported with model parallel
         if torch.cuda.device_count() > 1:
             model = torch.nn.DataParallel(model, output_device=0)
-            minibatch_size = min(minibatch_size_per_device * torch.cuda.device_count(), batch_size)
+            minibatch_size = min(
+                minibatch_size_per_device * torch.cuda.device_count(), batch_size
+            )
             print(
                 "Using",
                 torch.cuda.device_count(),
@@ -266,23 +284,31 @@ def train_and_save_model(
         print("Model training took", time.time() - start, "seconds")
         if save_path:
             # Note: If the model is wrapped by DataParallel, we need to unwrap it before saving
-            (model if hasattr(model, "save_pretrained") else model.module).save_pretrained(
-                save_path
-            )
+            (
+                model if hasattr(model, "save_pretrained") else model.module
+            ).save_pretrained(save_path)
             print("saved", save_path)
 
     inference_results = None
     if inference_ds:
         inference_results = eval_model_acc(model, inference_ds, eval_batch_size)
-        logger.logkv("inference_accuracy", np.mean([r["acc"] for r in inference_results]))
+        logger.logkv(
+            "inference_accuracy", np.mean([r["acc"] for r in inference_results])  # type: ignore
+        )
 
     if save_path:
         with open(os.path.join(save_path, "results.pkl"), "wb") as f:
             pickle.dump(
                 {
-                    "avg_acc_test": float(np.mean([r["acc"] for r in test_results])),
+                    "avg_acc_test": float(
+                        np.mean([r["acc"] for r in test_results])  # type: ignore
+                    ),
                     "avg_acc_inference": float(
-                        np.mean([r["acc"] for r in inference_results] if inference_results else [])
+                        np.mean(
+                            [r["acc"] for r in inference_results]  # type: ignore
+                            if inference_results
+                            else []
+                        )
                     ),
                     "test_results": test_results,
                     "inference_results": inference_results if inference_results else [],

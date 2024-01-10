@@ -37,9 +37,11 @@ def load_dataset(ds_name: str, seed: int = 0, split_sizes: Optional[dict] = None
             ds = ds.select(range(n_docs))
         except IndexError as e:
             print(f"Warning {ds_name} has less than {n_docs} docs, using all: {e}")
-        ds = ds.map(functools.partial(cfg.formatter, rng=Random(seed)))
+        ds = ds.map(functools.partial(cfg.formatter, rng=Random(seed)))  # type: ignore
         ds = ds.map(
-            lambda ex: {"soft_label": [1 - float(ex["hard_label"]), float(ex["hard_label"])]}
+            lambda ex: {
+                "soft_label": [1 - float(ex["hard_label"]), float(ex["hard_label"])]
+            }
         )
         ds = ds.shuffle(seed=seed)  # shuffling a bit pointless for test set but wtv
         results[split] = ds
@@ -52,8 +54,8 @@ def tokenize_dataset(
     max_ctx: int,
 ):
     """
-    This function prepares the dataset for training. It takes the raw dataset, a formatting function,
-    a tokenizer, a maximum context length
+    This function prepares the dataset for training. It takes the raw dataset,
+    a formatting function, a tokenizer, a maximum context length
 
     Parameters:
     raw_ds: The raw dataset to be processed.
@@ -70,7 +72,9 @@ def tokenize_dataset(
             input_ids=toks["input_ids"],
         )
 
-    ds = raw_ds.map(process_function, batched=False).filter(lambda x: len(x["input_ids"]) < max_ctx)
+    ds = raw_ds.map(process_function, batched=False).filter(
+        lambda x: len(x["input_ids"]) < max_ctx
+    )
     return ds
 
 
@@ -91,7 +95,10 @@ def format_amazon_polarity(ex, rng):
 
 register_dataset(
     "amazon_polarity",
-    DatasetConfig(loader=hf_loader("amazon_polarity"), formatter=format_amazon_polarity),
+    DatasetConfig(
+        loader=hf_loader("amazon_polarity"),  # type: ignore
+        formatter=format_amazon_polarity,  # type: ignore
+    ),  # type: ignore
 )
 
 
@@ -107,7 +114,7 @@ def format_sciq(ex, rng):
 
 register_dataset(
     "sciq",
-    DatasetConfig(loader=hf_loader("sciq"), formatter=format_sciq),
+    DatasetConfig(loader=hf_loader("sciq"), formatter=format_sciq),  # type: ignore
 )
 
 
@@ -119,7 +126,10 @@ def format_anthropic_hh(ex, rng):
 
 register_dataset(
     "anthropic_hh",
-    DatasetConfig(loader=hf_loader("Anthropic/hh-rlhf"), formatter=format_anthropic_hh),
+    DatasetConfig(
+        loader=hf_loader("Anthropic/hh-rlhf"),  # type: ignore
+        formatter=format_anthropic_hh,  # type: ignore
+    ),  # type: ignore
 )
 
 
@@ -142,8 +152,8 @@ def format_cosmosqa(ex, rng):
 register_dataset(
     "cosmos_qa",
     DatasetConfig(
-        loader=hf_loader("cosmos_qa", split_names=dict(test="validation")),
-        formatter=format_cosmosqa,
+        loader=hf_loader("cosmos_qa", split_names=dict(test="validation")),  # type: ignore
+        formatter=format_cosmosqa,  # type: ignore
     ),
 )
 
@@ -157,7 +167,8 @@ def format_boolq(ex, rng):
 register_dataset(
     "boolq",
     DatasetConfig(
-        loader=hf_loader("boolq", split_names=dict(test="validation")), formatter=format_boolq
+        loader=hf_loader("boolq", split_names=dict(test="validation")),  # type: ignore
+        formatter=format_boolq,  # type: ignore
     ),
 )
 

@@ -14,7 +14,10 @@ def main(model_sizes: Union[List[str], str], **kwargs):
         and "model_size" not in kwargs
         and "weak_labels_path" not in kwargs
     ), "Need to use model_sizes when using sweep.py"
-    basic_args = [sys.executable, os.path.join(os.path.dirname(__file__), "train_simple.py")]
+    basic_args = [
+        sys.executable,
+        os.path.join(os.path.dirname(__file__), "train_simple.py"),
+    ]
     for key, value in kwargs.items():
         basic_args.extend([f"--{key}", str(value)])
 
@@ -30,10 +33,16 @@ def main(model_sizes: Union[List[str], str], **kwargs):
             print(f"Running weak {weak_model_size} to strong {strong_model_size}")
             subprocess.run(
                 basic_args
-                + ["--weak_model_size", weak_model_size, "--model_size", strong_model_size],
+                + [
+                    "--weak_model_size",
+                    weak_model_size,
+                    "--model_size",
+                    strong_model_size,
+                ],
                 check=True,
             )
 
 
 if __name__ == "__main__":
+    # see train_simple.py for valid args
     fire.Fire(main)

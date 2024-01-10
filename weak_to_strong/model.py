@@ -20,10 +20,12 @@ class TransformerWithHead(PreTrainedModel):
         self.num_labels = config.num_labels
         lm = AutoModelForCausalLM.from_pretrained(name, **kwargs)
         self.lm = lm
-        self.transformer = lm.transformer
+        self.transformer = lm.base_model
+        lm_head = getattr(lm, "lm_head", lm.embed_out)
         hidden_size = getattr(config, "n_embd", getattr(config, "hidden_size", None))
+        assert isinstance(hidden_size, int)
         self.score = torch.nn.Linear(hidden_size, self.num_labels, bias=False).to(
-            lm.lm_head.weight.dtype
+            lm_head.weight.dtype
         )
         torch.nn.init.normal_(self.score.weight, std=0.0)
         self.linear_probe = linear_probe
@@ -51,7 +53,10 @@ class TransformerWithHead(PreTrainedModel):
         input_lens = (input_ids != 0).sum(dim=-1)
         transformer_outputs = self.transformer(input_ids)
         hidden_states = torch.stack(
-            [transformer_outputs[0][i, input_lens[i] - 1, :] for i in range(len(input_lens))]
+            [
+                transformer_outputs[0][i, input_lens[i] - 1, :]
+                for i in range(len(input_lens))
+            ]
         )
         self.score.to(hidden_states.device)
         if self.linear_probe:
