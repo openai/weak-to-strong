@@ -6,12 +6,12 @@ from typing import Optional
 
 import fire
 import numpy as np
-from datasets import load_dataset, load_from_disk
+from datasets import load_from_disk
 
 import weak_to_strong.logger as logger
 from weak_to_strong.common import get_tokenizer
 from weak_to_strong.config import MODELS_DICT, get_config_foldername, loss_dict
-from weak_to_strong.datasets import VALID_DATASETS, tokenize_dataset
+from weak_to_strong.datasets import VALID_DATASETS, tokenize_dataset, load_and_process_dataset
 from weak_to_strong.train import train_and_save_model
 
 
@@ -112,8 +112,9 @@ def main(
     eval_batch_size = model_config.eval_batch_size
     random.seed(seed)
 
+    print("DS NAME:", ds_name)
     # Load dataset
-    dataset = load_dataset(
+    dataset = load_and_process_dataset(
         ds_name, seed=seed, split_sizes=dict(train=n_docs, test=n_test_docs)
     )
 

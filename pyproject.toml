@@ -25,5 +25,6 @@ dependencies=[
   "accelerate ~= 0.25",
   "transformers-stream-generator ~= 0.0.4",
   "torch_optimizer ~= 0.3",
-  "wandb ~= 0.16.1"
+  "wandb ~= 0.16.1",
+  "peft ~= 0.7.1"
 ]

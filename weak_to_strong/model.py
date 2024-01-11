@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 import torch
 from transformers import AutoConfig, AutoModelForCausalLM, PreTrainedModel
+from peft import get_peft_model, LoraConfig, TaskType, PeftType  # type: ignore
 
 
 @dataclass
@@ -14,14 +15,28 @@ class TransformerWithHead(PreTrainedModel):
     This class initializes the linear head to zeros
     """
 
-    def __init__(self, name, linear_probe=False, **kwargs):
+    def __init__(self, name, lora_modules=None, linear_probe=False, lora_rank=8, lora_alpha=8, lora_dropout=0.0, **kwargs):
         config = AutoConfig.from_pretrained(name, **kwargs)
         super().__init__(config)
         self.num_labels = config.num_labels
         lm = AutoModelForCausalLM.from_pretrained(name, **kwargs)
-        self.lm = lm
-        self.transformer = lm.base_model
-        lm_head = getattr(lm, "lm_head", lm.embed_out)
+
+        if lora_modules is not None:
+            peft_config = LoraConfig(
+                peft_type=PeftType.LORA,
+                task_type=TaskType.CAUSAL_LM,
+                inference_mode=False,
+                target_modules=lora_modules,
+                r=lora_rank,
+                lora_alpha=lora_alpha,
+                lora_dropout=lora_dropout,
+            )
+            lm = get_peft_model(lm, peft_config)
+            self.transformer = lm.base_model.base_model # PeftModel -> LoraModel -> PreTrainedModel
+        else:
+            self.transformer = lm.base_model  # CausalLM -> PreTrainedModel
+        lm_head = getattr(lm, "lm_head", getattr(lm, "embed_out", None))
+        assert isinstance(lm_head, torch.nn.Linear)
         hidden_size = getattr(config, "n_embd", getattr(config, "hidden_size", None))
         assert isinstance(hidden_size, int)
         self.score = torch.nn.Linear(hidden_size, self.num_labels, bias=False).to(

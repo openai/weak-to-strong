@@ -1,7 +1,21 @@
 import torch
+from dataclasses import dataclass
+from typing import Optional
 
-from .loss import logconf_loss_fn, product_loss_fn, xent_loss
-from .train import ModelConfig
+from weak_to_strong.loss import logconf_loss_fn, product_loss_fn, xent_loss
+
+@dataclass
+class ModelConfig:
+    name: str
+    default_lr: float
+    eval_batch_size: int
+    lora_modules: Optional[list[str]] = None
+    custom_kwargs: Optional[dict] = None
+    gradient_checkpointing: bool = False
+    model_parallel: bool = False
+    default_optimizer: str = "adam"
+
+GPT_NEOX_LORA_MODULES = ["dense_h_to_4h", "dense_4h_to_h", "query_key_value"]
 
 # NOTE learning rates are not particularly tuned, work somewhat reasonably at train batch size 32
 MODEL_CONFIGS = [
@@ -37,19 +51,21 @@ MODEL_CONFIGS = [
         name="EleutherAI/pythia-410m",
         default_lr=5e-5,
         eval_batch_size=32,
+        model_parallel=False,
+        lora_modules=GPT_NEOX_LORA_MODULES,
     ),
     ModelConfig(
         name="mistralai/Mistral-7B-v0.1",
         default_lr=1e-5,
         eval_batch_size=2,
+        lora_modules=["up_proj", "down_proj", "gate_proj", "k_proj", "q_proj", "v_proj"],
         gradient_checkpointing=True,
-        model_parallel=True,
-        # note: you will probably not be able to run this without many gpus
-        custom_kwargs={
-            "trust_remote_code": True,
-            "bf16": torch.cuda.is_bf16_supported(),
-            "fp32": not torch.cuda.is_bf16_supported(),
-        },
+        model_parallel=False,
+        # custom_kwargs={
+        #     "trust_remote_code": True,
+        #     "bf16": torch.cuda.is_bf16_supported(),
+        #     "fp32": not torch.cuda.is_bf16_supported(),
+        # },
     ),
     ModelConfig(
         name="Qwen/Qwen-1_8B",

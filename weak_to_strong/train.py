@@ -16,17 +16,7 @@ from weak_to_strong.common import clear_mem
 from weak_to_strong.eval import eval_model_acc
 from weak_to_strong.loss import xent_loss
 from weak_to_strong.model import TransformerWithHead
-
-
-@dataclass
-class ModelConfig:
-    name: str
-    default_lr: float
-    eval_batch_size: int
-    custom_kwargs: Optional[dict] = None
-    gradient_checkpointing: bool = False
-    model_parallel: bool = False
-    default_optimizer: str = "adam"
+from weak_to_strong.config import ModelConfig
 
 
 def train_model(
@@ -71,10 +61,11 @@ def train_model(
                 False
             ), f"invalid lr schedule, {lr_schedule}, must be constant or cosine_anneal"
 
+    trainable_params = [p for p in model.parameters() if p.requires_grad]
     if optimizer_name.lower() == "adam":
-        optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+        optimizer = torch.optim.Adam(trainable_params, lr=lr)
     elif optimizer_name.lower() == "adafactor":
-        optimizer = toptim.Adafactor(model.parameters(), lr=lr)
+        optimizer = toptim.Adafactor(trainable_params, lr=lr)
     else:
         assert False, f"invalid optimizer {optimizer_name}, must be adam or adafactor"
     if lr_schedule == "cosine_anneal":
@@ -158,8 +149,8 @@ def train_model(
         lr_scheduler.step()
         if log_every and step % log_every == 0:
             print(
-                f"Step: {step}/{nsteps} Recent losses: {np.mean(losses)} {np.mean(accuracies)} "
-                "{len(losses)}"
+                f"Step: {step}/{nsteps}; loss: {np.mean(losses)}; acc: {np.mean(accuracies)}; "
+                f"({len(losses)} losses)"
             )
             losses = []
             accuracies = []
@@ -231,6 +222,7 @@ def train_and_save_model(
         ), f"you might want more gpus for {model_config.name}"
         model = TransformerWithHead.from_pretrained(
             model_config.name,
+            lora_modules=model_config.lora_modules,
             num_labels=2,
             device_map="auto",
             linear_probe=linear_probe,
@@ -241,10 +233,9 @@ def train_and_save_model(
         minibatch_size = minibatch_size_per_device
     else:
         model = TransformerWithHead.from_pretrained(
-            model_config.name, num_labels=2, linear_probe=linear_probe, **custom_kwargs
-        ).to(
-            "cuda"  # type: ignore
-        )
+            model_config.name, lora_modules=model_config.lora_modules, num_labels=2, 
+            linear_probe=linear_probe, **custom_kwargs
+        ).to("cuda")  # type: ignore
         already_trained = maybe_load_model(model)
         # data parallel:  currently not supported with model parallel
         if torch.cuda.device_count() > 1:

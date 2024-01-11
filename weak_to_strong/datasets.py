@@ -23,7 +23,7 @@ def register_dataset(name: str, config: DatasetConfig):
     _REGISTRY[name] = config
 
 
-def load_dataset(ds_name: str, seed: int = 0, split_sizes: Optional[dict] = None):
+def load_and_process_dataset(ds_name: str, seed: int = 0, split_sizes: Optional[dict] = None):
     if split_sizes is None:
         split_sizes = dict(train=None, test=None)
 
