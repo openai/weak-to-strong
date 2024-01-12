@@ -10,6 +10,7 @@ import numpy as np
 import torch
 import torch_optimizer as toptim
 from transformers.modeling_utils import load_sharded_checkpoint
+from sklearn.metrics import roc_auc_score
 
 import weak_to_strong.logger as logger
 from weak_to_strong.common import clear_mem
@@ -36,6 +37,11 @@ def train_model(
     lr_schedule: str = "cosine_anneal",
     optimizer_name: str = "adam",
 ):
+    """
+    ds is a dataset of examples, each of which is a dict with keys:
+    - input_ids: a list of token ids
+    - soft_label: a list of soft label probabilities
+    """
     print("LR", lr, "batch_size", batch_size, "minibatch_size", minibatch_size)
     assert (
         batch_size % minibatch_size == 0
@@ -76,6 +82,7 @@ def train_model(
     it = itertools.chain.from_iterable(itertools.repeat(ds, epochs))
     losses = []
     accuracies = []
+    aurocs = []
     eval_acc_dict = {}
 
     # If the model is wrapped by DataParallel, it doesn't have a device. In this case,
@@ -110,10 +117,7 @@ def train_model(
                 torch.nn.utils.rnn.pad_sequence(
                     [torch.tensor(ex["input_ids"]) for ex in mbatch]  # type: ignore
                 )
-                .transpose(
-                    0,
-                    1,
-                )
+                .transpose(0, 1)
                 .to(io_device)  # type: ignore
             )
             labels = torch.tensor([ex["soft_label"] for ex in mbatch]).to(io_device)  # type: ignore
@@ -124,23 +128,29 @@ def train_model(
             all_labels.extend(labels)
         all_logits = torch.stack(all_logits)
         all_labels = torch.stack(all_labels)
+        all_hard_labels = torch.argmax(all_labels, dim=1)
         loss = loss_fn(all_logits, all_labels, step_frac=step / nsteps)
         loss_tot += loss.item()
         loss.backward()
         losses.append(loss_tot)
         accuracies.append(
             torch.mean(
-                (torch.argmax(all_logits, dim=1) == torch.argmax(all_labels, dim=1)).to(
-                    torch.float32
-                )
+                (torch.argmax(all_logits, dim=1) == all_hard_labels).to(torch.float32)
             ).item()
         )
+        if all_logits.shape[1] == 2:
+            logprobs = torch.nn.functional.log_softmax(all_logits, dim=1)
+            aurocs.append(roc_auc_score(all_hard_labels.cpu(), logprobs[:, 1].cpu()))
+        else:
+            aurocs.append(np.nan)
+
         logger.logkvs(
             {
                 "step": step,
                 "progress": step / nsteps,
                 "loss": loss_tot,
                 "train_accuracy": accuracies[-1],
+                "train_auroc": aurocs[-1],
                 "lr": lr_scheduler.get_last_lr()[0],
             }
         )
@@ -149,8 +159,9 @@ def train_model(
         lr_scheduler.step()
         if log_every and step % log_every == 0:
             print(
-                f"Step: {step}/{nsteps}; loss: {np.mean(losses)}; acc: {np.mean(accuracies)}; "
-                f"({len(losses)} losses)"
+                f"Step: {step}/{nsteps}; loss: {np.mean(losses)}; "
+                f"agreement acc: {np.mean(accuracies)}; "
+                f"agreement auroc: {np.mean(aurocs)}; ({len(losses)} losses)"
             )
             losses = []
             accuracies = []
