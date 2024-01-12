@@ -121,8 +121,8 @@ def train_model(
                 .to(io_device)  # type: ignore
             )
             labels = torch.tensor([ex["soft_label"] for ex in mbatch]).to(io_device)  # type: ignore
-
-            logits = model(input_ids)
+            maybe_choice_ids = [ex["choice_input_ids"] for ex in mbatch] if "choice_input_ids" in mbatch[0] else None  # type: ignore
+            logits = model(input_ids, choice_input_ids=maybe_choice_ids)
 
             all_logits.extend(logits.to(io_device))
             all_labels.extend(labels)
@@ -140,7 +140,7 @@ def train_model(
         )
         if all_logits.shape[1] == 2:
             logprobs = torch.nn.functional.log_softmax(all_logits, dim=1)
-            aurocs.append(roc_auc_score(all_hard_labels.cpu(), logprobs[:, 1].cpu()))
+            aurocs.append(roc_auc_score(all_hard_labels.cpu(), logprobs[:, 1].detach().cpu()))
         else:
             aurocs.append(np.nan)
 
@@ -160,8 +160,8 @@ def train_model(
         if log_every and step % log_every == 0:
             print(
                 f"Step: {step}/{nsteps}; loss: {np.mean(losses)}; "
-                f"agreement acc: {np.mean(accuracies)}; "
-                f"agreement auroc: {np.mean(aurocs)}; ({len(losses)} losses)"
+                f"train acc: {np.mean(accuracies)}; "
+                f"train auroc: {np.mean(aurocs)}; ({len(losses)} losses)"
             )
             losses = []
             accuracies = []
@@ -205,6 +205,9 @@ def train_and_save_model(
     if minibatch_size_per_device is None:
         minibatch_size_per_device = 1
 
+    # if the dataset has a "choice_input_ids" field, we use the LM head
+    use_lm_head = "choice_input_ids" in train_ds.features
+
     gradient_checkpointing = model_config.gradient_checkpointing
     custom_kwargs = model_config.custom_kwargs or {}
 
@@ -234,6 +237,7 @@ def train_and_save_model(
         model = TransformerWithHead.from_pretrained(
             model_config.name,
             lora_modules=model_config.lora_modules,
+            use_lm_head=use_lm_head,
             num_labels=2,
             device_map="auto",
             linear_probe=linear_probe,
@@ -244,7 +248,7 @@ def train_and_save_model(
         minibatch_size = minibatch_size_per_device
     else:
         model = TransformerWithHead.from_pretrained(
-            model_config.name, lora_modules=model_config.lora_modules, num_labels=2, 
+            model_config.name, lora_modules=model_config.lora_modules, use_lm_head=use_lm_head, num_labels=2, 
             linear_probe=linear_probe, **custom_kwargs
         ).to("cuda")  # type: ignore
         already_trained = maybe_load_model(model)

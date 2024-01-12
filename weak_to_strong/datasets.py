@@ -12,6 +12,7 @@ class DatasetConfig:
     # split -> unshuffled dataset of items
     loader: Callable[[str], HfDataset]
     # formats items to have keys 'txt' and 'hard_label', takes a random.Random rng
+    # optionally also adds the key 'choices', a pair of strings, indicating to use the lm head
     formatter: Callable[[Any], Any]
 
 
@@ -48,6 +49,24 @@ def load_and_process_dataset(ds_name: str, seed: int = 0, split_sizes: Optional[
     return results
 
 
+warned_about_choices = set()    
+def encode_choice(text, tokenizer):
+    global warned_about_choices
+     
+    c_ids = tokenizer.encode(text, add_special_tokens=False)
+
+    # some tokenizers split off the leading whitespace character
+    if tokenizer.decode(c_ids[0]).strip() == "":
+        c_ids = c_ids[1:]
+        assert c_ids == tokenizer.encode(text.lstrip(), add_special_tokens=False)
+
+    if len(c_ids) != 1 and c_ids not in warned_about_choices:
+        assert c_ids[0] not in [c[0] for c in warned_about_choices], "Choice shares first token with another choice"
+        warned_about_choices.add(c_ids)
+        print(f"Choice should be one token: {text}")
+    return c_ids[0]
+
+
 def tokenize_dataset(
     raw_ds: HfDataset,
     tokenizer: Callable,
@@ -66,11 +85,17 @@ def tokenize_dataset(
     ds: The processed and shuffled dataset ready for training.
     """
 
-    def process_function(res):
-        toks = tokenizer(res["txt"])
-        return dict(
+    def process_function(ex):
+        toks = tokenizer(ex["txt"])
+        out = dict(
             input_ids=toks["input_ids"],
         )
+
+        if "choices" in ex:
+            choice_toks = [encode_choice(c, tokenizer) for c in ex["choices"]]
+            out["choice_input_ids"] = choice_toks
+        
+        return out
 
     ds = raw_ds.map(process_function, batched=False).filter(
         lambda x: len(x["input_ids"]) < max_ctx
@@ -115,6 +140,24 @@ def format_sciq(ex, rng):
 register_dataset(
     "sciq",
     DatasetConfig(loader=hf_loader("sciq"), formatter=format_sciq),  # type: ignore
+)
+
+
+def format_sciq_with_support(ex, rng):
+    # from https://github.com/EleutherAI/elk-generalization
+    template = "Name: Bob\n\nPassage 1:\n{support}\n\nQ1: \"{question}\" Is the answer \"{answer}\"?\nA:"
+    choices = (" No", " Yes")
+    hard_label = int(rng.random() < 0.5)
+    if hard_label:
+        ans = ex["correct_answer"]
+    else:
+        ans = rng.choice([ex["distractor1"], ex["distractor2"], ex["distractor3"]])
+    txt = template.format(support=ex["support"], question=ex["question"], answer=ans)
+    return dict(txt=txt, hard_label=hard_label, choices=choices)
+
+register_dataset(
+    "sciq_with_support",
+    DatasetConfig(loader=hf_loader("sciq"), formatter=format_sciq_with_support),  # type: ignore
 )
 
 
@@ -174,6 +217,7 @@ register_dataset(
 
 
 VALID_DATASETS: list[str] = list(_REGISTRY.keys())
+
 
 """
 from datasets import disable_caching
