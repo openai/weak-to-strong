@@ -121,7 +121,8 @@ def main(
     # Split the training dataset in half
     train_dataset, test_ds = dataset["train"], dataset["test"]  # type: ignore
 
-    if weak_labels_path is None:
+    if weak_labels_path is None:  # train on ground truth
+        # split off half for getting weak labels
         split_data = train_dataset.train_test_split(test_size=0.5, seed=seed)  # type: ignore
         train1_ds, train2_ds = split_data["train"], split_data["test"]
         print("len(train1):", len(train1_ds), "len(train2):", len(train2_ds))
@@ -172,9 +173,9 @@ def main(
     print(f"Training model model, size {model_size}")
     test_results, weak_ds = train_and_save_model(
         model_config,
-        train1_ds,
-        test_ds,
-        inference_ds=train2_ds,
+        train1_ds,  # this has weak labels iff weak_labels_path is not None
+        test_ds,  # this has ground truth labels no matter what
+        inference_ds=train2_ds,  # make weak training dataset for strong model
         batch_size=batch_size,
         save_path=save_path,
         loss_fn=loss_fn,

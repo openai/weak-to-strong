@@ -185,7 +185,7 @@ import numpy as np
 ds_name = "boolq"
 print(VALID_DATASETS)
 
-ds = load_dataset(ds_name, split_sizes=dict(train=500, test=10))
+ds = load_and_process_dataset(ds_name, split_sizes=dict(train=500, test=10))
 train = list(ds['train'])
 test = list(ds['test'])
 print(test[0])
