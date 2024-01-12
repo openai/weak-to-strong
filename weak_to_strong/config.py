@@ -16,6 +16,7 @@ class ModelConfig:
     default_optimizer: str = "adam"
 
 GPT_NEOX_LORA_MODULES = ["dense_h_to_4h", "dense_4h_to_h", "query_key_value"]
+GPT2_LORA_MODULES = ["c_fc", "c_proj", "c_attn"]
 
 # NOTE learning rates are not particularly tuned, work somewhat reasonably at train batch size 32
 MODEL_CONFIGS = [
@@ -23,22 +24,26 @@ MODEL_CONFIGS = [
         name="gpt2",
         default_lr=5e-5,
         eval_batch_size=32,
+        lora_modules=GPT2_LORA_MODULES,
     ),
     ModelConfig(
         name="gpt2-medium",
         default_lr=5e-5,
         eval_batch_size=32,
+        lora_modules=GPT2_LORA_MODULES,
     ),
     ModelConfig(
         name="gpt2-large",
         default_lr=1e-5,
         eval_batch_size=32,
+        lora_modules=GPT2_LORA_MODULES,
     ),
     ModelConfig(
         name="gpt2-xl",
         default_lr=1e-5,
         eval_batch_size=2,
         gradient_checkpointing=True,
+        lora_modules=GPT2_LORA_MODULES,
         # Should use model_parallel on V100s (note: ironically if you have a single V100
         # it should run, but if you have multiple it won't run without model_parallel
         # because of the overhead of data parallel training).
