@@ -66,37 +66,40 @@
         ul {
             list-style: none;
         }
+        #feeling-lucky:hover{
+            cursor: pointer;
+        }
     </style>
 </head>
 
 <body>
     <article class="markdown-body">
-        <h2>Project Structure<span hierarchy="0" class="partial-repository-url"> of: openai/weak-to-strong</span><div style="float: right;"><a href="index.html"><i class="bi bi-search"></i></a></div></h2>
+        <h2>Project structure<span hierarchy="0" class="partial-repository-url"> of: openai/weak-to-strong</span><div style="float: right;"><a title="Document index" style="margin:3.5px;" href="index.html"><i class="bi bi-search"></i></a><a title="Feeling lucky" style="margin:3.5px;" id="feeling-lucky" href="#"><i class="bi bi-dice-3"></i></a><a title="Expand tree" style="margin:3.5px;" href="tree.html?full=true" id="expand-tree"><i class="bi bi-caret-down-square"></i></a></div></h2>
 <ul>
 <li><span hierarchy="0" class="expanded" onclick="toggleVisibility(this)" ><strong class="directory" id="/"><code>weak-to-strong</code></strong> <em>Weak-to-strong learning experiments with language and vision tasks.</em></span><ul>
-<li><a href="index.html?q=/README.md" id="/README.md"><code>README&period;md</code></a> <em>Weak-to-strong learning setup for binary tasks, using pretrained language models and various loss functions.</em></li>
 <li><span hierarchy="1" class="expanded" onclick="toggleVisibility(this)" ><strong class="directory" id="/notebooks/"><code>notebooks</code></strong></span><ul>
-<li><a href="index.html?q=/notebooks/Plotting.py" id="/notebooks/Plotting.py"><code>Plotting&period;py</code></a> <em>Python script for data plotting and analysis.</em></li>
+<li><a class="file_link" href="index.html?q=/notebooks/Plotting.py" id="/notebooks/Plotting.py"><code>Plotting&period;py</code></a> <em>Python script for data plotting and analysis.</em></li>
 </ul>
 </li>
-<li><a href="index.html?q=/pyproject.toml" id="/pyproject.toml"><code>pyproject&period;toml</code></a> <em>Python project using Hatch, depends on OpenAI's "weak_to_strong" with torch, numpy.</em></li>
-<li><a href="index.html?q=/setup.py" id="/setup.py"><code>setup&period;py</code></a> <em>Sets up Python package with setuptools</em></li>
-<li><a href="index.html?q=/train_weak_to_strong.py" id="/train_weak_to_strong.py"><code>train&UnderBar;weak&UnderBar;to&UnderBar;strong&period;py</code></a> <em>Trains weak models to strong, compares performance, stores results.</em></li>
+<li><a class="file_link" href="index.html?q=/pyproject.toml" id="/pyproject.toml"><code>pyproject&period;toml</code></a> <em>Python project using Hatch, depends on OpenAI's "weak_to_strong" with torch, numpy.</em></li>
+<li><a class="file_link" href="index.html?q=/README.md" id="/README.md"><code>README&period;md</code></a> <em>Weak-to-strong learning setup for binary tasks, using pretrained language models and various loss functions.</em></li>
+<li><a class="file_link" href="index.html?q=/setup.py" id="/setup.py"><code>setup&period;py</code></a> <em>Sets up Python package with setuptools</em></li>
+<li><a class="file_link" href="index.html?q=/train_weak_to_strong.py" id="/train_weak_to_strong.py"><code>train&UnderBar;weak&UnderBar;to&UnderBar;strong&period;py</code></a> <em>Trains weak models to strong, compares performance, stores results.</em></li>
 <li><span hierarchy="1" class="expanded" onclick="toggleVisibility(this)" ><strong class="directory" id="/vision/"><code>vision</code></strong> <em>Experiments weak-to-strong learning on ImageNet using various models with data pipeline and logistic regression.</em></span><ul>
-<li><a href="index.html?q=/vision/README.md" id="/vision/README.md"><code>README&period;md</code></a> <em>Experiments weak-to-strong learning on ImageNet with various models</em></li>
-<li><a href="index.html?q=/vision/data.py" id="/vision/data.py"><code>data&period;py</code></a> <em>Image data pipeline for ImageNet dataset</em></li>
-<li><a href="index.html?q=/vision/models.py" id="/vision/models.py"><code>models&period;py</code></a> <em>Deep learning models creation and modification.</em></li>
-<li><a href="index.html?q=/vision/run_weak_strong.py" id="/vision/run_weak_strong.py"><code>run&UnderBar;weak&UnderBar;strong&period;py</code></a> <em>Trains logistic regression model with weak and strong labels, evaluates accuracy.</em></li>
+<li><a class="file_link" href="index.html?q=/vision/data.py" id="/vision/data.py"><code>data&period;py</code></a> <em>Image data pipeline for ImageNet dataset</em></li>
+<li><a class="file_link" href="index.html?q=/vision/models.py" id="/vision/models.py"><code>models&period;py</code></a> <em>Deep learning models creation and modification.</em></li>
+<li><a class="file_link" href="index.html?q=/vision/README.md" id="/vision/README.md"><code>README&period;md</code></a> <em>Experiments weak-to-strong learning on ImageNet with various models</em></li>
+<li><a class="file_link" href="index.html?q=/vision/run_weak_strong.py" id="/vision/run_weak_strong.py"><code>run&UnderBar;weak&UnderBar;strong&period;py</code></a> <em>Trains logistic regression model with weak and strong labels, evaluates accuracy.</em></li>
 </ul>
 </li>
 <li><span hierarchy="1" class="expanded" onclick="toggleVisibility(this)" ><strong class="directory" id="/weak_to_strong/"><code>weak&UnderBar;to&UnderBar;strong</code></strong> <em>Weak to strong contrastive learning for data augmentation.</em></span><ul>
-<li><a href="index.html?q=/weak_to_strong/common.py" id="/weak_to_strong/common.py"><code>common&period;py</code></a> <em>PyTorch tokenizer &amp; memory clear functions</em></li>
-<li><a href="index.html?q=/weak_to_strong/datasets.py" id="/weak_to_strong/datasets.py"><code>datasets&period;py</code></a> <em>Load, split, tokenize datasets in DatasetConfig class.</em></li>
-<li><a href="index.html?q=/weak_to_strong/eval.py" id="/weak_to_strong/eval.py"><code>eval&period;py</code></a> <em>Evaluates model accuracy on dataset with batches.</em></li>
-<li><a href="index.html?q=/weak_to_strong/logger.py" id="/weak_to_strong/logger.py"><code>logger&period;py</code></a> <em>WandbLogger: Weights &amp; Biases logging, dumping, configuring.</em></li>
-<li><a href="index.html?q=/weak_to_strong/loss.py" id="/weak_to_strong/loss.py"><code>loss&period;py</code></a> <em>Loss function base class with custom loss functions.</em></li>
-<li><a href="index.html?q=/weak_to_strong/model.py" id="/weak_to_strong/model.py"><code>model&period;py</code></a> <em>Transformer model with linear head</em></li>
-<li><a href="index.html?q=/weak_to_strong/train.py" id="/weak_to_strong/train.py"><code>train&period;py</code></a> <em>Trains and saves model, manages GPUs, checks accuracy, logs results.</em></li>
+<li><a class="file_link" href="index.html?q=/weak_to_strong/common.py" id="/weak_to_strong/common.py"><code>common&period;py</code></a> <em>PyTorch tokenizer &amp; memory clear functions</em></li>
+<li><a class="file_link" href="index.html?q=/weak_to_strong/datasets.py" id="/weak_to_strong/datasets.py"><code>datasets&period;py</code></a> <em>Load, split, tokenize datasets in DatasetConfig class.</em></li>
+<li><a class="file_link" href="index.html?q=/weak_to_strong/eval.py" id="/weak_to_strong/eval.py"><code>eval&period;py</code></a> <em>Evaluates model accuracy on dataset with batches.</em></li>
+<li><a class="file_link" href="index.html?q=/weak_to_strong/logger.py" id="/weak_to_strong/logger.py"><code>logger&period;py</code></a> <em>WandbLogger: Weights &amp; Biases logging, dumping, configuring.</em></li>
+<li><a class="file_link" href="index.html?q=/weak_to_strong/loss.py" id="/weak_to_strong/loss.py"><code>loss&period;py</code></a> <em>Loss function base class with custom loss functions.</em></li>
+<li><a class="file_link" href="index.html?q=/weak_to_strong/model.py" id="/weak_to_strong/model.py"><code>model&period;py</code></a> <em>Transformer model with linear head</em></li>
+<li><a class="file_link" href="index.html?q=/weak_to_strong/train.py" id="/weak_to_strong/train.py"><code>train&period;py</code></a> <em>Trains and saves model, manages GPUs, checks accuracy, logs results.</em></li>
 </ul>
 </li>
 </ul>
@@ -118,14 +121,27 @@
 
         const queryParams = getQueryParams(window.location.search);
         const show_full = queryParams.full == "true";
+        //const is_random = queryParams.random == 'true';
+        function feelingLucky() {
+            var elements = document.getElementsByClassName("file_link");
+            var randomIndex = Math.floor(Math.random() * elements.length);
+            window.location = elements[randomIndex].href;
+        }
+        //if (is_random) {feelingLucky();}
+        document.getElementById("feeling-lucky").onclick = feelingLucky;
         if (!show_full) {
             const spans = document.querySelectorAll('span');
             for (let span of spans) {
                 if (span.getAttribute("hierarchy") == '0') { continue }
-
                 toggleVisibility(span);
             }
+        } else {
+            const expand_elem = document.getElementById('expand-tree');
+            expand_elem.setAttribute("href", "tree.html");
+            expand_elem.setAttribute("title", "Undo expand");
+            expand_elem.innerHTML = '<i class="bi bi-caret-up-square"></i>'
         }
+
     </script>
 </body>
 
