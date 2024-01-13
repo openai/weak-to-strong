@@ -66,11 +66,6 @@ MODEL_CONFIGS = [
         lora_modules=["up_proj", "down_proj", "gate_proj", "k_proj", "q_proj", "v_proj"],
         gradient_checkpointing=True,
         model_parallel=False,
-        # custom_kwargs={
-        #     "trust_remote_code": True,
-        #     "bf16": torch.cuda.is_bf16_supported(),
-        #     "fp32": not torch.cuda.is_bf16_supported(),
-        # },
     ),
     ModelConfig(
         name="Qwen/Qwen-1_8B",

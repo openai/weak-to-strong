@@ -170,7 +170,7 @@ def main(
         train2_ds = tokenize_dataset(train2_ds, tokenizer, max_ctx)
 
     loss_fn = loss_dict[loss]
-    print(f"Training model model, size {model_size}")
+    print(f"Training model {model_size}")
     test_results, weak_ds = train_and_save_model(
         model_config,
         train1_ds,  # this has weak labels iff weak_labels_path is not None

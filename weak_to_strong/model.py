@@ -57,7 +57,7 @@ class TransformerWithHead(PreTrainedModel):
         return cls(name, **kwargs)
 
     def gradient_checkpointing_enable(self):
-        model = self.transformer
+        model = self.transformer if self.score is not None else self.lm
         (
             model if hasattr(model, "save_pretrained") else model.module
         ).gradient_checkpointing_enable()
