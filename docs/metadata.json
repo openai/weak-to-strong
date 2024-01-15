@@ -7,7 +7,7 @@
         "0": {
             "filepath": "/README.md",
             "entry_id": 0,
-            "language_id": "plain-text"
+            "language_id": "markdown"
         },
         "1": {
             "filepath": "/notebooks/Plotting.py",
@@ -32,7 +32,7 @@
         "5": {
             "filepath": "/vision/README.md",
             "entry_id": 56,
-            "language_id": "plain-text"
+            "language_id": "markdown"
         },
         "6": {
             "filepath": "/vision/data.py",
