@@ -58,6 +58,9 @@ MODEL_CONFIGS = [
         eval_batch_size=32,
         model_parallel=False,
         lora_modules=GPT_NEOX_LORA_MODULES,
+        custom_kwargs={
+            "torch_dtype": torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float32,
+        }
     ),
     ModelConfig(
         name="mistralai/Mistral-7B-v0.1",
@@ -66,6 +69,9 @@ MODEL_CONFIGS = [
         lora_modules=["up_proj", "down_proj", "gate_proj", "k_proj", "q_proj", "v_proj"],
         gradient_checkpointing=True,
         model_parallel=False,
+        custom_kwargs={
+            "torch_dtype": torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float32,
+        }
     ),
     ModelConfig(
         name="Qwen/Qwen-1_8B",
