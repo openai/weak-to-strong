@@ -4,6 +4,14 @@ import torch
 from transformers import AutoTokenizer
 
 
+def to_batch(x, batch_size: int, start: int = 0, end: int | None = None):
+    """Helper function to split a dataset into batches,
+    with the last batch being smaller if necessary."""
+    end = end if end is not None else len(x)
+    for i in range(start, end, batch_size):
+        yield x[i : i + batch_size]
+
+
 def get_tokenizer(model_name: str):
     """
     This function returns a tokenizer based on the model name.
@@ -21,7 +29,8 @@ def clear_mem(verbose: bool = False):
     """
     This function is used to clear the memory allocated by PyTorch.
     It does so by calling the garbage collector to release unused GPU memory.
-    After clearing the memory, it prints the current amount of memory still allocated by PyTorch (post-clean).
+    After clearing the memory, it prints the current amount of memory still
+    allocated by PyTorch (post-clean).
 
     Parameters:
     verbose (bool): Whether to print additional information.
@@ -38,7 +47,7 @@ def clear_mem(verbose: bool = False):
         def try_attr(x, a):
             try:
                 return getattr(x, a)
-            except:
+            except Exception:
                 # amazing that this can cause...
                 # (AttributeError, OSError, AssertionError, RuntimeError, ModuleNotFoundError)
                 return None

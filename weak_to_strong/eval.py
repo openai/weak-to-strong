@@ -3,11 +3,7 @@ import numpy as np
 import torch
 from torch import nn
 from sklearn.metrics import roc_auc_score
-
-
-def to_batch(x, batch_size):
-    for i in range(0, len(x), batch_size):
-        yield x[i : i + batch_size]
+from weak_to_strong.common import to_batch
 
 
 def unpack(x):
@@ -43,12 +39,16 @@ def eval_model_acc(
             ).to(model.device if hasattr(model, "device") else "cpu")
             labels = batch["soft_label"]
             # run forward pass
-            raw_logits = model(input_ids, choice_input_ids=batch.get("choice_input_ids"))
+            raw_logits = model(
+                input_ids, choice_input_ids=batch.get("choice_input_ids")
+            )
 
-            probs = unpack(torch.nn.functional.softmax(raw_logits, dim=-1))
+            raw_logprobs = torch.nn.functional.log_softmax(raw_logits, dim=-1)
+            logprobs = unpack(raw_logprobs)
+            probs = unpack(raw_logprobs.exp())
             logits = unpack(raw_logits)
 
-            preds = np.argmax(probs, axis=-1)
+            preds = np.argmax(logprobs, axis=-1)
             labels = np.argmax(labels, axis=-1)
 
             results.extend(
@@ -61,17 +61,30 @@ def eval_model_acc(
                         acc=label == pred,
                         logits=logit,
                         soft_label=prob,
+                        logprob=logprob,
                     )
-                    for input_id, txt, label, pred, prob, logit in zip(
-                        batch["input_ids"], batch["txt"], labels, preds, probs, logits
+                    for input_id, txt, label, pred, prob, logprob, logit in zip(
+                        batch["input_ids"],
+                        batch["txt"],
+                        labels,
+                        preds,
+                        probs,
+                        logprobs,
+                        logits,
                     )
                 ]
             )
         accs = [r["acc"] for r in results]
-        print("Accuracy against ground truth:", np.mean(accs), "+/-", np.std(accs) / np.sqrt(len(accs)))
-        gt, prob = np.array([r["gt_label"] for r in results]), np.array([r["soft_label"] for r in results])[:, 1]
-        print("AUC against ground truth:", roc_auc_score(gt, prob))
-
-
+        print(
+            "Accuracy against ground truth:",
+            np.mean(accs),
+            "+/-",
+            np.std(accs) / np.sqrt(len(accs)),
+        )
+        gt, logprob = (
+            np.array([r["gt_label"] for r in results]),
+            np.array([r["logprob"] for r in results])[:, 1],
+        )
+        print("AUC against ground truth:", roc_auc_score(gt, logprob))
 
         return datasets.Dataset.from_list(results)

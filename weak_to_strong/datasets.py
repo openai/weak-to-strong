@@ -37,7 +37,7 @@ def load_and_process_dataset(ds_name: str, seed: int = 0, split_sizes: Optional[
         try:
             ds = ds.select(range(n_docs))
         except IndexError as e:
-            print(f"Warning {ds_name} has less than {n_docs} docs, using all: {e}")
+            print(f"Warning {ds_name} has less than {n_docs} docs, using all {len(ds)}")
         ds = ds.map(functools.partial(cfg.formatter, rng=Random(seed)))  # type: ignore
         ds = ds.map(
             lambda ex: {
@@ -59,11 +59,12 @@ def encode_choice(text, tokenizer):
     if tokenizer.decode(c_ids[0]).strip() == "":
         c_ids = c_ids[1:]
         assert c_ids == tokenizer.encode(text.lstrip(), add_special_tokens=False)
-
+    
+    c_ids = tuple(c_ids)
     if len(c_ids) != 1 and c_ids not in warned_about_choices:
         assert c_ids[0] not in [c[0] for c in warned_about_choices], "Choice shares first token with another choice"
         warned_about_choices.add(c_ids)
-        print(f"Choice should be one token: {text}")
+        print(f"Warning: Only the first token of multitoken choice \"{text}\" will be used")
     return c_ids[0]
 
 
@@ -97,9 +98,11 @@ def tokenize_dataset(
         
         return out
 
-    ds = raw_ds.map(process_function, batched=False).filter(
-        lambda x: len(x["input_ids"]) < max_ctx
-    )
+
+    ds = raw_ds.map(process_function, batched=False)
+    pre_len = len(ds)
+    ds = ds.filter(lambda x: len(x["input_ids"]) < max_ctx)
+    print(f"Filtered {100 * (1 - len(ds) / pre_len):.2f}% of examples for being too long")
     return ds
 
 
@@ -133,9 +136,9 @@ def format_sciq(ex, rng):
         ans = ex["correct_answer"]
     else:
         ans = rng.choice([ex["distractor1"], ex["distractor2"], ex["distractor3"]])
+    
     txt = f"Q: {ex['question']} A: {ans}"
     return dict(txt=txt, hard_label=hard_label)
-
 
 register_dataset(
     "sciq",
@@ -143,7 +146,24 @@ register_dataset(
 )
 
 
-def format_sciq_with_support(ex, rng):
+def format_sciq_for_lm_head(ex, rng):
+    hard_label = int(rng.random() < 0.5)
+    if hard_label:
+        ans = ex["correct_answer"]
+    else:
+        ans = rng.choice([ex["distractor1"], ex["distractor2"], ex["distractor3"]])
+
+    txt = f"Q: {ex['question']} A: {ans}. Is this correct?"
+    choices = (" No", " Yes")
+    return dict(txt=txt, hard_label=hard_label, choices=choices)
+
+register_dataset(
+    "sciq_for_lm_head",
+    DatasetConfig(loader=hf_loader("sciq"), formatter=format_sciq_for_lm_head),  # type: ignore
+)
+
+
+def format_sciq_for_lm_head_with_support(ex, rng):
     # from https://github.com/EleutherAI/elk-generalization
     template = "Name: Bob\n\nPassage 1:\n{support}\n\nQ1: \"{question}\" Is the answer \"{answer}\"?\nA:"
     choices = (" No", " Yes")
@@ -154,6 +174,23 @@ def format_sciq_with_support(ex, rng):
         ans = rng.choice([ex["distractor1"], ex["distractor2"], ex["distractor3"]])
     txt = template.format(support=ex["support"], question=ex["question"], answer=ans)
     return dict(txt=txt, hard_label=hard_label, choices=choices)
+
+register_dataset(
+    "sciq_for_lm_head_with_support",
+    DatasetConfig(loader=hf_loader("sciq"), formatter=format_sciq_for_lm_head_with_support),  # type: ignore
+)
+
+
+def format_sciq_with_support(ex, rng):
+    # from https://github.com/EleutherAI/elk-generalization
+    template = "Name: Bob\n\nPassage 1:\n{support}\n\nQ1: \"{question}\" Is the answer \"{answer}\"?"
+    hard_label = int(rng.random() < 0.5)
+    if hard_label:
+        ans = ex["correct_answer"]
+    else:
+        ans = rng.choice([ex["distractor1"], ex["distractor2"], ex["distractor3"]])
+    txt = template.format(support=ex["support"], question=ex["question"], answer=ans)
+    return dict(txt=txt, hard_label=hard_label)
 
 register_dataset(
     "sciq_with_support",

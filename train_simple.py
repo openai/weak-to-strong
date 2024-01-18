@@ -11,7 +11,11 @@ from datasets import load_from_disk
 import weak_to_strong.logger as logger
 from weak_to_strong.common import get_tokenizer
 from weak_to_strong.config import MODELS_DICT, get_config_foldername, loss_dict
-from weak_to_strong.datasets import VALID_DATASETS, tokenize_dataset, load_and_process_dataset
+from weak_to_strong.datasets import (
+    VALID_DATASETS,
+    tokenize_dataset,
+    load_and_process_dataset,
+)
 from weak_to_strong.train import train_and_save_model
 
 
@@ -45,9 +49,6 @@ def main(
     eval_every: int = 1000000,
     sync_command: Optional[str] = None,
 ):
-    # this is per device!
-    if minibatch_size_per_device is None:
-        minibatch_size_per_device = 1
     assert (
         ds_name in VALID_DATASETS
     ), f"Unknown dataset {ds_name} not in {VALID_DATASETS}"
@@ -55,6 +56,10 @@ def main(
         weak_model_size is None or weak_labels_path is None
     ), "Can't pass both weak_model_size and weak_labels_path"
     model_config = MODELS_DICT[model_size]
+
+    # this is per device!
+    if minibatch_size_per_device is None:
+        minibatch_size_per_device = model_config.minibatch_size_per_device or 1
 
     use_default_lr = False
     if lr is None:
@@ -162,6 +167,7 @@ def main(
         sweep_subfolder=sweep_subfolder,
         config_name=config_name,
     )
+
     # Tokenize datasets
     tokenizer = get_tokenizer(model_config.name)
     train1_ds = tokenize_dataset(train1_ds, tokenizer, max_ctx)  # type: ignore
@@ -170,7 +176,7 @@ def main(
         train2_ds = tokenize_dataset(train2_ds, tokenizer, max_ctx)
 
     loss_fn = loss_dict[loss]
-    print(f"Training model model, size {model_size}")
+    print(f"Training model {model_size}")
     test_results, weak_ds = train_and_save_model(
         model_config,
         train1_ds,  # this has weak labels iff weak_labels_path is not None

@@ -16,10 +16,22 @@ class TransformerWithHead(PreTrainedModel):
     This class initializes the linear head to zeros
     """
 
-    def __init__(self, name, lora_modules=None, use_lm_head=False, linear_probe=False, lora_rank=8, lora_alpha=8, lora_dropout=0.0, **kwargs):
+    def __init__(
+        self,
+        name,
+        lora_modules=None,
+        use_lm_head=False,
+        linear_probe=False,
+        lora_rank=8,
+        lora_alpha=8,
+        lora_dropout=0.0,
+        **kwargs,
+    ):
         config = AutoConfig.from_pretrained(name, **kwargs)
         super().__init__(config)
         self.num_labels = config.num_labels
+        self.use_lm_head = use_lm_head
+        self.lora_modules = lora_modules
         self.lm = AutoModelForCausalLM.from_pretrained(name, **kwargs)
 
         if lora_modules is not None:
@@ -34,9 +46,6 @@ class TransformerWithHead(PreTrainedModel):
                 lora_dropout=lora_dropout,
             )
             self.lm = get_peft_model(self.lm, peft_config)
-            self.transformer = self.lm.base_model.base_model # PeftModel -> LoraModel -> PreTrainedModel
-        else:
-            self.transformer = self.lm.base_model  # CausalLM -> PreTrainedModel
 
         lm_head = getattr(self.lm, "lm_head", getattr(self.lm, "embed_out", None))
         assert isinstance(lm_head, torch.nn.Linear)
@@ -44,7 +53,9 @@ class TransformerWithHead(PreTrainedModel):
             print("Using LM head instead of learned head because choices are provided")
             self.score = None
         else:
-            hidden_size = getattr(config, "n_embd", getattr(config, "hidden_size", None))
+            hidden_size = getattr(
+                config, "n_embd", getattr(config, "hidden_size", None)
+            )
             assert isinstance(hidden_size, int)
             self.score = torch.nn.Linear(hidden_size, self.num_labels, bias=False).to(
                 lm_head.weight.dtype
@@ -52,17 +63,29 @@ class TransformerWithHead(PreTrainedModel):
             torch.nn.init.normal_(self.score.weight, std=0.0)
         self.linear_probe = linear_probe
 
+    @property
+    def transformer(self):
+        if self.lora_modules is not None:
+            return (
+                self.lm.base_model.base_model
+            )  # PeftModel -> LoraModel -> PreTrainedModel
+        return self.lm.base_model  # CausalLM -> PreTrainedModel
+
     @classmethod
     def from_pretrained(cls, name, **kwargs):
         return cls(name, **kwargs)
 
     def gradient_checkpointing_enable(self):
-        model = self.transformer
+        model = self.transformer if self.score is not None else self.lm
         (
             model if hasattr(model, "save_pretrained") else model.module
         ).gradient_checkpointing_enable()
 
-    def forward(self, input_ids: torch.LongTensor, choice_input_ids: Optional[torch.LongTensor] = None):
+    def forward(
+        self,
+        input_ids: torch.LongTensor,
+        choice_input_ids: Optional[torch.LongTensor] = None,
+    ):
         """
         Forward pass of the model with a linear head.
 

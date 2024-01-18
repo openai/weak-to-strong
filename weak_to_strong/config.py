@@ -4,19 +4,23 @@ from typing import Optional
 
 from weak_to_strong.loss import logconf_loss_fn, product_loss_fn, xent_loss
 
+
 @dataclass
 class ModelConfig:
     name: str
     default_lr: float
     eval_batch_size: int
+    minibatch_size_per_device: Optional[int] = None
     lora_modules: Optional[list[str]] = None
     custom_kwargs: Optional[dict] = None
     gradient_checkpointing: bool = False
     model_parallel: bool = False
     default_optimizer: str = "adam"
 
+
 GPT_NEOX_LORA_MODULES = ["dense_h_to_4h", "dense_4h_to_h", "query_key_value"]
 GPT2_LORA_MODULES = ["c_fc", "c_proj", "c_attn"]
+per_device_ram = torch.cuda.get_device_properties(0).total_memory
 
 # NOTE learning rates are not particularly tuned, work somewhat reasonably at train batch size 32
 MODEL_CONFIGS = [
@@ -47,15 +51,21 @@ MODEL_CONFIGS = [
         # Should use model_parallel on V100s (note: ironically if you have a single V100
         # it should run, but if you have multiple it won't run without model_parallel
         # because of the overhead of data parallel training).
-        model_parallel=(
-            torch.cuda.get_device_properties(0).total_memory < 35e9
-            and torch.cuda.device_count() > 1
-        ),
+        model_parallel=(per_device_ram < 35e9 and torch.cuda.device_count() > 1),
     ),
     ModelConfig(
         name="EleutherAI/pythia-410m",
-        default_lr=5e-5,
+        default_lr=1e-5,
         eval_batch_size=32,
+        minibatch_size_per_device=32,  # this needs adjusting for GPU/dataset
+        model_parallel=False,
+        lora_modules=GPT_NEOX_LORA_MODULES,
+    ),
+    ModelConfig(
+        name="EleutherAI/pythia-2.8b",
+        default_lr=1e-5,
+        eval_batch_size=32,
+        minibatch_size_per_device=2,  # this needs adjusting for GPU/dataset
         model_parallel=False,
         lora_modules=GPT_NEOX_LORA_MODULES,
     ),
@@ -63,24 +73,29 @@ MODEL_CONFIGS = [
         name="mistralai/Mistral-7B-v0.1",
         default_lr=1e-5,
         eval_batch_size=2,
-        lora_modules=["up_proj", "down_proj", "gate_proj", "k_proj", "q_proj", "v_proj"],
+        lora_modules=[
+            "up_proj",
+            "down_proj",
+            "gate_proj",
+            "k_proj",
+            "q_proj",
+            "v_proj",
+        ],
+        minibatch_size_per_device=1,  # this needs adjusting for GPU/dataset
         gradient_checkpointing=True,
         model_parallel=False,
-        # custom_kwargs={
-        #     "trust_remote_code": True,
-        #     "bf16": torch.cuda.is_bf16_supported(),
-        #     "fp32": not torch.cuda.is_bf16_supported(),
-        # },
+        custom_kwargs={
+            "torch_dtype": torch.bfloat16
+            if torch.cuda.is_bf16_supported()
+            else torch.float32,
+        },
     ),
     ModelConfig(
         name="Qwen/Qwen-1_8B",
         default_lr=1e-5,
         eval_batch_size=2,
         gradient_checkpointing=True,
-        model_parallel=(
-            torch.cuda.get_device_properties(0).total_memory < 35e9
-            and torch.cuda.device_count() > 1
-        ),
+        model_parallel=(per_device_ram < 35e9 and torch.cuda.device_count() > 1),
         custom_kwargs={
             "trust_remote_code": True,
             "bf16": torch.cuda.is_bf16_supported(),
