@@ -1,8 +1,6 @@
-import itertools
 import os
 import pickle
 import time
-from dataclasses import dataclass
 from typing import Callable, Optional
 
 import datasets
@@ -11,9 +9,10 @@ import torch
 import torch_optimizer as toptim
 from transformers.modeling_utils import load_sharded_checkpoint
 from sklearn.metrics import roc_auc_score
+from transformers import get_linear_schedule_with_warmup
 
 import weak_to_strong.logger as logger
-from weak_to_strong.common import clear_mem
+from weak_to_strong.common import clear_mem, to_batch
 from weak_to_strong.eval import eval_model_acc
 from weak_to_strong.loss import xent_loss
 from weak_to_strong.model import TransformerWithHead
@@ -69,17 +68,20 @@ def train_model(
 
     trainable_params = [p for p in model.parameters() if p.requires_grad]
     if optimizer_name.lower() == "adam":
-        optimizer = torch.optim.Adam(trainable_params, lr=lr)
+        optimizer = torch.optim.Adam(trainable_params, lr=lr, betas=(0.9, 0.95))
     elif optimizer_name.lower() == "adafactor":
         optimizer = toptim.Adafactor(trainable_params, lr=lr)
     else:
         assert False, f"invalid optimizer {optimizer_name}, must be adam or adafactor"
     if lr_schedule == "cosine_anneal":
         lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, nsteps)
+    elif lr_schedule == "linear_with_warmup":
+        lr_scheduler = get_linear_schedule_with_warmup(
+            optimizer, num_warmup_steps=50, num_training_steps=nsteps
+        )
     else:
         lr_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_schedule_fn)
     step = 0
-    it = itertools.chain.from_iterable(itertools.repeat(ds, epochs))
     losses = []
     accuracies = []
     aurocs = []
@@ -90,83 +92,94 @@ def train_model(
     # a bit more data than other ones, but hopefully should not be too big of a deal.
     io_device = model.device if hasattr(model, "device") else 0
 
-    while step < nsteps:
-        loss_tot = 0
-        if eval_every and (step + 1) % eval_every == 0:
-            assert eval_ds is not None, "must provide eval_ds if eval_every is not None"
-            eval_results = eval_model_acc(model, eval_ds, eval_batch_size)
-            if gradient_checkpointing:
-                (
-                    model
-                    if hasattr(model, "gradient_checkpointing_enable")
-                    else model.module
-                ).gradient_checkpointing_enable()
-            if train_with_dropout:
-                model.train()
-            eval_accs = np.mean([r["acc"] for r in eval_results])  # type: ignore
-            eval_acc_dict[step] = eval_accs
-            logger.logkv("eval_accuracy", eval_accs)
-        all_logits = []
-        all_labels = []
-        for i in range(batch_size // minibatch_size):
-            try:
-                mbatch = [next(it) for _ in range(minibatch_size)]
-            except StopIteration:
-                break
-            input_ids = (
-                torch.nn.utils.rnn.pad_sequence(
-                    [torch.tensor(ex["input_ids"]) for ex in mbatch]  # type: ignore
+    for epoch in range(epochs):
+        for start in range(0, len(ds), batch_size):
+            loss_tot = 0
+            if eval_every and (step + 1) % eval_every == 0:
+                assert (
+                    eval_ds is not None
+                ), "must provide eval_ds if eval_every is not None"
+                eval_results = eval_model_acc(model, eval_ds, eval_batch_size)
+                if gradient_checkpointing:
+                    (
+                        model
+                        if hasattr(model, "gradient_checkpointing_enable")
+                        else model.module
+                    ).gradient_checkpointing_enable()
+                if train_with_dropout:
+                    model.train()
+                eval_accs = np.mean([r["acc"] for r in eval_results])  # type: ignore
+                eval_acc_dict[step] = eval_accs
+                logger.logkv("eval_accuracy", eval_accs)
+            all_logits = []
+            all_labels = []
+            for mbatch in to_batch(
+                ds, minibatch_size, start=start, end=start + batch_size
+            ):
+                input_ids = (
+                    torch.nn.utils.rnn.pad_sequence(
+                        [torch.tensor(ids) for ids in mbatch["input_ids"]]  # type: ignore
+                    )
+                    .transpose(0, 1)
+                    .to(io_device)  # type: ignore
                 )
-                .transpose(0, 1)
-                .to(io_device)  # type: ignore
-            )
-            labels = torch.tensor([ex["soft_label"] for ex in mbatch]).to(io_device)  # type: ignore
-            maybe_choice_ids = [ex["choice_input_ids"] for ex in mbatch] if "choice_input_ids" in mbatch[0] else None  # type: ignore
-            logits = model(input_ids, choice_input_ids=maybe_choice_ids)
+                labels = torch.tensor(mbatch["soft_label"]).to(io_device)  # type: ignore
+                logits = model(
+                    input_ids, choice_input_ids=mbatch.get("choice_input_ids")
+                )
 
-            all_logits.extend(logits.to(io_device))
-            all_labels.extend(labels)
-        all_logits = torch.stack(all_logits)
-        all_labels = torch.stack(all_labels)
-        all_hard_labels = torch.argmax(all_labels, dim=1)
-        loss = loss_fn(all_logits, all_labels, step_frac=step / nsteps)
-        loss_tot += loss.item()
-        loss.backward()
-        losses.append(loss_tot)
-        accuracies.append(
-            torch.mean(
-                (torch.argmax(all_logits, dim=1) == all_hard_labels).to(torch.float32)
-            ).item()
-        )
-        if all_logits.shape[1] == 2:
-            logprobs = torch.nn.functional.log_softmax(all_logits, dim=1)
-            aurocs.append(roc_auc_score(all_hard_labels.cpu(), logprobs[:, 1].detach().cpu()))
-        else:
-            aurocs.append(np.nan)
-
-        logger.logkvs(
-            {
-                "step": step,
-                "progress": step / nsteps,
-                "loss": loss_tot,
-                "train_accuracy": accuracies[-1],
-                "train_auroc": aurocs[-1],
-                "lr": lr_scheduler.get_last_lr()[0],
-            }
-        )
-        optimizer.step()
-        optimizer.zero_grad()
-        lr_scheduler.step()
-        if log_every and step % log_every == 0:
-            print(
-                f"Step: {step}/{nsteps}; loss: {np.mean(losses)}; "
-                f"train acc: {np.mean(accuracies)}; "
-                f"train auroc: {np.mean(aurocs)}; ({len(losses)} losses)"
+                all_logits.extend(logits.to(io_device))
+                all_labels.extend(labels)
+            all_logits = torch.stack(all_logits)
+            all_labels = torch.stack(all_labels)
+            all_hard_labels = torch.argmax(all_labels, dim=1)
+            all_logprobs = torch.nn.functional.log_softmax(
+                all_logits.detach().float(), dim=1
+            )[:, 1]
+            loss = loss_fn(all_logits, all_labels, step_frac=step / nsteps)
+            loss_tot += loss.item()
+            loss.backward()
+            losses.append(loss_tot)
+            accuracies.append(
+                torch.mean(
+                    (torch.argmax(all_logits, dim=1) == all_hard_labels).to(
+                        torch.float32
+                    )
+                ).item()
             )
-            losses = []
-            accuracies = []
-        step += 1
-        logger.dumpkvs()
+
+            try:
+                auroc = roc_auc_score(all_hard_labels.cpu(), all_logprobs.cpu())
+            except ValueError:
+                auroc = np.nan
+            aurocs.append(auroc)
+
+            logger.logkvs(
+                {
+                    "step": step,
+                    "progress": step / nsteps,
+                    "loss": loss_tot,
+                    "train_accuracy": accuracies[-1],
+                    "train_auroc": aurocs[-1],
+                    "lr": lr_scheduler.get_last_lr()[0],
+                }
+            )
+            optimizer.step()
+            optimizer.zero_grad()
+            lr_scheduler.step()
+            if log_every and step % log_every == 0:
+                print(
+                    f"Step: {step}/{nsteps}; loss: {np.mean(losses)}; "
+                    f"train acc: {np.mean(accuracies)}; "
+                    f"train auroc: {np.mean(aurocs)}; ({len(losses)} losses)"
+                )
+                losses = []
+                accuracies = []
+                aurocs = []
+
+            step += 1
+            logger.dumpkvs()
+
     final_eval_results = None
     if eval_every:
         print("Final evaluation:")
@@ -248,9 +261,15 @@ def train_and_save_model(
         minibatch_size = minibatch_size_per_device
     else:
         model = TransformerWithHead.from_pretrained(
-            model_config.name, lora_modules=model_config.lora_modules, use_lm_head=use_lm_head, num_labels=2, 
-            linear_probe=linear_probe, **custom_kwargs
-        ).to("cuda")  # type: ignore
+            model_config.name,
+            lora_modules=model_config.lora_modules,
+            use_lm_head=use_lm_head,
+            num_labels=2,
+            linear_probe=linear_probe,
+            **custom_kwargs,
+        ).to(
+            "cuda"
+        )  # type: ignore
         already_trained = maybe_load_model(model)
         # data parallel:  currently not supported with model parallel
         if torch.cuda.device_count() > 1:
