@@ -9,6 +9,8 @@ def to_batch(x, batch_size: int, start: int = 0, end: int | None = None):
     with the last batch being smaller if necessary."""
     end = end if end is not None else len(x)
     for i in range(start, end, batch_size):
+        if i >= len(x):
+            return
         yield x[i : i + batch_size]
 
 
