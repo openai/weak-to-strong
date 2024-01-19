@@ -7,7 +7,7 @@ import fire
 
 
 def main(
-    model_sizes: Union[List[str], str], weak_epochs: int, strong_epochs: int, **kwargs
+    model_sizes: Union[List[str], str], weak_epochs: int, strong_epochs: int, train_self_to_self: bool = False, **kwargs
 ):
     if isinstance(model_sizes, str):
         model_sizes = model_sizes.split(",")
@@ -36,7 +36,8 @@ def main(
 
     print("Running transfer models")
     for i in range(len(model_sizes)):
-        for j in range(i, len(model_sizes)):
+        start = i if train_self_to_self else i + 1
+        for j in range(start, len(model_sizes)):
             weak_model_size = model_sizes[i]
             strong_model_size = model_sizes[j]
             print(f"Running weak {weak_model_size} to strong {strong_model_size}")
