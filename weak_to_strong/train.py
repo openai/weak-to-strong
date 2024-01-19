@@ -25,7 +25,7 @@ def train_model(
     batch_size: int,
     lr: float = 1e-5,
     loss_fn: Callable = xent_loss,
-    log_every: int = 10,
+    log_every: int = 100,
     eval_every: Optional[int] = None,
     eval_batch_size: int = 256,
     minibatch_size: int = 8,
@@ -33,6 +33,7 @@ def train_model(
     gradient_checkpointing: bool = False,
     train_with_dropout: bool = False,
     epochs: int = 1,
+    save_path: Optional[str] = None,
     lr_schedule: str = "cosine_anneal",
     optimizer_name: str = "adam",
 ):
@@ -100,6 +101,11 @@ def train_model(
                     eval_ds is not None
                 ), "must provide eval_ds if eval_every is not None"
                 eval_results = eval_model_acc(model, eval_ds, eval_batch_size)
+                if save_path:
+                    (
+                        model if hasattr(model, "save_pretrained") else model.module
+                    ).save_pretrained(save_path)
+                    print("saved", save_path)
                 if gradient_checkpointing:
                     (
                         model
@@ -150,7 +156,8 @@ def train_model(
 
             try:
                 auroc = roc_auc_score(all_hard_labels.cpu(), all_logprobs.cpu())
-            except ValueError:
+            except ValueError as e:
+                print(f"Warning: {e}")
                 auroc = np.nan
             aurocs.append(auroc)
 
@@ -189,6 +196,12 @@ def train_model(
             "eval_accuracy", np.mean([r["acc"] for r in final_eval_results])  # type: ignore
         )  # type: ignore
         logger.dumpkvs()
+    if save_path:
+        # Note: If the model is wrapped by DataParallel, we need to unwrap it before saving
+        (model if hasattr(model, "save_pretrained") else model.module).save_pretrained(
+            save_path
+        )
+        print("saved", save_path)
     return final_eval_results
 
 
@@ -268,8 +281,8 @@ def train_and_save_model(
             linear_probe=linear_probe,
             **custom_kwargs,
         ).to(
-            "cuda"
-        )  # type: ignore
+            "cuda"  # type: ignore
+        )
         already_trained = maybe_load_model(model)
         # data parallel:  currently not supported with model parallel
         if torch.cuda.device_count() > 1:
@@ -296,6 +309,7 @@ def train_and_save_model(
             batch_size,
             lr=lr,
             epochs=epochs,
+            save_path=save_path,
             eval_ds=test_ds,
             gradient_checkpointing=gradient_checkpointing,
             loss_fn=loss_fn,

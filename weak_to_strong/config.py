@@ -70,6 +70,19 @@ MODEL_CONFIGS = [
         lora_modules=GPT_NEOX_LORA_MODULES,
     ),
     ModelConfig(
+        name="EleutherAI/pythia-12b",
+        default_lr=1e-5,
+        eval_batch_size=32,
+        minibatch_size_per_device=2,  # this needs adjusting for GPU/dataset
+        model_parallel=False,
+        lora_modules=GPT_NEOX_LORA_MODULES,
+        custom_kwargs={
+            "torch_dtype": torch.bfloat16
+            if torch.cuda.is_bf16_supported()
+            else torch.float32  # we can only do this because we're using LoRA
+        },
+    ),
+    ModelConfig(
         name="mistralai/Mistral-7B-v0.1",
         default_lr=1e-5,
         eval_batch_size=2,
@@ -85,7 +98,7 @@ MODEL_CONFIGS = [
         gradient_checkpointing=True,
         model_parallel=False,
         custom_kwargs={
-            "torch_dtype": torch.bfloat16
+            "torch_dtype": torch.bfloat16  # we can only do this because we're using LoRA
             if torch.cuda.is_bf16_supported()
             else torch.float32,
         },

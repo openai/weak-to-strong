@@ -24,7 +24,8 @@ def main(
     max_ctx: int = 1024,
     ds_name: str = "sciq",
     loss: str = "xent",
-    n_docs: int = 20000,
+    n_train1_docs: int = 20000,
+    n_train2_docs: int = 10000,
     n_test_docs: int = 10000,
     model_size: str = "gpt2",
     lr: Optional[float] = None,
@@ -79,12 +80,13 @@ def main(
         "max_ctx": max_ctx,
         "ds_name": ds_name,
         "loss": loss,
-        "n_docs": n_docs,
+        "n_train1_docs": n_train1_docs,
+        "n_train2_docs": n_train2_docs,
         "n_test_docs": n_test_docs,
         "model_size": model_size,
         "lr": lr,
         "optim": optim,
-        "epochs": epochs,
+        # "epochs": epochs,  # This varies between weak and strong
         # "force_retrain": force_retrain,
         "seed": seed,
         # "minibatch_size_per_device": minibatch_size_per_device,
@@ -92,7 +94,7 @@ def main(
         # "results_folder": results_folder,
         "linear_probe": linear_probe,
         "lr_schedule": lr_schedule,
-        "eval_every": eval_every,
+        # "eval_every": eval_every,  # This varies between weak and strong
         # "sweep_subfolder": sweep_subfolder,
     }
 
@@ -120,7 +122,9 @@ def main(
     print("DS NAME:", ds_name)
     # Load dataset
     dataset = load_and_process_dataset(
-        ds_name, seed=seed, split_sizes=dict(train=n_docs, test=n_test_docs)
+        ds_name,
+        seed=seed,
+        split_sizes=dict(train=n_train1_docs + n_train2_docs, test=n_test_docs),
     )
 
     # Split the training dataset in half
@@ -128,7 +132,7 @@ def main(
 
     if weak_labels_path is None:  # train on ground truth
         # split off half for getting weak labels
-        split_data = train_dataset.train_test_split(test_size=0.5, seed=seed)  # type: ignore
+        split_data = train_dataset.train_test_split(test_size=n_train2_docs)
         train1_ds, train2_ds = split_data["train"], split_data["test"]
         print("len(train1):", len(train1_ds), "len(train2):", len(train2_ds))
         config_name = get_config_foldername(config)

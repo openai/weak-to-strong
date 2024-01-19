@@ -6,7 +6,9 @@ from typing import List, Union
 import fire
 
 
-def main(model_sizes: Union[List[str], str], **kwargs):
+def main(
+    model_sizes: Union[List[str], str], weak_epochs: int, strong_epochs: int, **kwargs
+):
     if isinstance(model_sizes, str):
         model_sizes = model_sizes.split(",")
     assert (
@@ -24,14 +26,17 @@ def main(model_sizes: Union[List[str], str], **kwargs):
 
     print("Running ground truth models")
     for model_size in model_sizes:
-        subprocess.run(basic_args + ["--model_size", model_size], check=True)
+        subprocess.run(
+            basic_args + ["--model_size", model_size, "--epochs", str(weak_epochs)],
+            check=True,
+        )
 
     if "eval_every" in kwargs:
         basic_args.extend(["--eval_every", str(kwargs["eval_every"])])
 
     print("Running transfer models")
     for i in range(len(model_sizes)):
-        for j in range(i + 1, len(model_sizes)):
+        for j in range(i, len(model_sizes)):
             weak_model_size = model_sizes[i]
             strong_model_size = model_sizes[j]
             print(f"Running weak {weak_model_size} to strong {strong_model_size}")
@@ -42,6 +47,8 @@ def main(model_sizes: Union[List[str], str], **kwargs):
                     weak_model_size,
                     "--model_size",
                     strong_model_size,
+                    "--epochs",
+                    str(strong_epochs),
                 ],
                 check=True,
             )
