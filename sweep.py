@@ -25,7 +25,8 @@ def main(
             basic_args.extend([f"--{key}", str(value)])
 
     print("Running ground truth models")
-    for model_size in model_sizes:
+    model_sizes_to_run = model_sizes if train_self_to_self else model_sizes[:-1]
+    for model_size in model_sizes_to_run:
         subprocess.run(
             basic_args + ["--model_size", model_size, "--epochs", str(weak_epochs)],
             check=True,
