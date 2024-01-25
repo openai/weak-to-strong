@@ -117,6 +117,18 @@ def hf_loader(*hf_name, split_names=None):
 ##########
 
 
+def format_mc_taco(ex, rng):
+    template = "{sentence}\n\nGiven the above, {question} Is the answer {answer}?"
+    return dict(txt=template.format(**ex), hard_label=ex["label"])
+
+register_dataset(
+    "mc_taco",
+    DatasetConfig(  # we switch train and test bc test is bigger
+        loader=hf_loader("mc_taco", split_names=dict(train="test", test="validation")),  # type: ignore
+        formatter=format_mc_taco,  # type: ignore
+    ),
+)
+
 def format_amazon_polarity(ex, rng):
     return dict(txt=f"{ex['title']} {ex['content']}", hard_label=ex["label"])
 
@@ -126,7 +138,7 @@ register_dataset(
     DatasetConfig(
         loader=hf_loader("amazon_polarity"),  # type: ignore
         formatter=format_amazon_polarity,  # type: ignore
-    ),  # type: ignore
+    ),
 )
 
 
@@ -209,7 +221,7 @@ register_dataset(
     DatasetConfig(
         loader=hf_loader("Anthropic/hh-rlhf"),  # type: ignore
         formatter=format_anthropic_hh,  # type: ignore
-    ),  # type: ignore
+    ),
 )
 
 
