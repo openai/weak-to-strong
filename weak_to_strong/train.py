@@ -10,6 +10,7 @@ import torch_optimizer as toptim
 from transformers.modeling_utils import load_sharded_checkpoint
 from sklearn.metrics import roc_auc_score
 from transformers import get_linear_schedule_with_warmup
+import wandb
 
 import weak_to_strong.logger as logger
 from weak_to_strong.common import clear_mem, to_batch
@@ -18,14 +19,13 @@ from weak_to_strong.loss import xent_loss
 from weak_to_strong.model import TransformerWithHead
 from weak_to_strong.config import ModelConfig
 
-
-def save(model: torch.nn.Module, save_path: str):
+def save(model: torch.nn.Module, save_path: str, optimizer=None, scheduler=None):
     # Note: If the model is wrapped by DataParallel, we need to unwrap it before saving
     model_to_save = model.module if hasattr(model, "module") else model
-    model_to_save.save_pretrained(save_path)
-    print("saved HF", save_path)
+    # model_to_save.save_pretrained(save_path)
+    # print("saved HF", save_path)
     # save torch module
-    model_to_save.save_torch(os.path.join(save_path, "pytorch_model.bin"))
+    model_to_save.save_torch(os.path.join(save_path, "pytorch_model.bin"), optimizer, scheduler)
     print("saved torch weights", os.path.join(save_path, "pytorch_model.bin"))
 
 
@@ -113,7 +113,7 @@ def train_model(
                 ), "must provide eval_ds if eval_every is not None"
                 eval_results = eval_model_acc(model, eval_ds, eval_batch_size)
                 if save_path:
-                    save(model, save_path)
+                    save(model, save_path, optimizer, lr_scheduler)
                 if gradient_checkpointing:
                     (
                         model
@@ -122,9 +122,10 @@ def train_model(
                     ).gradient_checkpointing_enable()
                 if train_with_dropout:
                     model.train()
-                eval_accs = np.mean([r["acc"] for r in eval_results])  # type: ignore
-                eval_acc_dict[step] = eval_accs
-                logger.logkv("eval_accuracy", eval_accs)
+                eval_acc = np.mean([r["acc"] for r in eval_results])  # type: ignore
+                eval_acc_dict[step] = eval_acc
+                logger.logkv("eval_accuracy", eval_acc)
+                wandb.log({"eval/accuracy": eval_acc})
             all_logits = []
             all_labels = []
             for mbatch in to_batch(
@@ -169,16 +170,16 @@ def train_model(
                 auroc = np.nan
             aurocs.append(auroc)
 
-            logger.logkvs(
-                {
+            log_dict = {
                     "step": step,
                     "progress": step / nsteps,
                     "loss": loss_tot,
                     "train_accuracy": accuracies[-1],
                     "train_auroc": aurocs[-1],
                     "lr": lr_scheduler.get_last_lr()[0],
-                }
-            )
+            }
+            logger.logkvs(log_dict)
+            wandb.log(log_dict)
             optimizer.step()
             optimizer.zero_grad()
             lr_scheduler.step()
@@ -200,12 +201,12 @@ def train_model(
         print("Final evaluation:")
         assert eval_ds is not None, "must provide eval_ds if eval_every is not None"
         final_eval_results = eval_model_acc(model, eval_ds, eval_batch_size)
-        logger.logkv(
-            "eval_accuracy", np.mean([r["acc"] for r in final_eval_results])  # type: ignore
-        )  # type: ignore
+        eval_acc = np.mean([r["acc"] for r in final_eval_results])
+        logger.logkv("eval_accuracy", eval_acc)
+        wandb.log({"eval/accuracy": eval_acc})
         logger.dumpkvs()
     if save_path:
-        save(model, save_path)
+        save(model, save_path, optimizer, lr_scheduler)
     return final_eval_results
 
 
@@ -356,5 +357,6 @@ def train_and_save_model(
     # try to clean up memory
     clear_mem()
     logger.shutdown()
+    wandb.finish()
 
     return test_results, inference_results

@@ -7,6 +7,7 @@ from typing import Optional
 import fire
 import numpy as np
 from datasets import load_from_disk
+import wandb
 
 import weak_to_strong.logger as logger
 from weak_to_strong.common import get_tokenizer
@@ -30,7 +31,8 @@ def main(
     model_size: str = "gpt2",
     lr: Optional[float] = None,
     optim: Optional[str] = None,
-    epochs: int = 2,
+    weak_epochs: int = 1,
+    strong_epochs: int = 1,
     force_retrain: bool = False,
     seed: int = 0,
     minibatch_size_per_device: Optional[int] = None,
@@ -47,9 +49,9 @@ def main(
     sweep_subfolder: str = "default",
     # Set to a very large value so that by default we don't do any intermediate evals but
     # still do final evals (which requires eval_every to be set to a non-zero, non-None value)
-    eval_every: int = 1000000,
+    eval_every: int = 10000000,
     sync_command: Optional[str] = None,
-):
+):  
     assert (
         ds_name in VALID_DATASETS
     ), f"Unknown dataset {ds_name} not in {VALID_DATASETS}"
@@ -57,6 +59,10 @@ def main(
         weak_model_size is None or weak_labels_path is None
     ), "Can't pass both weak_model_size and weak_labels_path"
     model_config = MODELS_DICT[model_size]
+
+    # only evaluate intermediately for the student
+    eval_every = eval_every if weak_labels_path is not None else 10000000
+    epochs = strong_epochs if weak_labels_path is not None else weak_epochs
 
     # this is per device!
     if minibatch_size_per_device is None:
@@ -86,7 +92,7 @@ def main(
         "model_size": model_size,
         "lr": lr,
         "optim": optim,
-        # "epochs": epochs,  # This varies between weak and strong
+        ("strong_epochs" if weak_labels_path is not None else "weak_epochs"): epochs,
         # "force_retrain": force_retrain,
         "seed": seed,
         # "minibatch_size_per_device": minibatch_size_per_device,
@@ -94,7 +100,7 @@ def main(
         # "results_folder": results_folder,
         "linear_probe": linear_probe,
         "lr_schedule": lr_schedule,
-        # "eval_every": eval_every,  # This varies between weak and strong
+        "eval_every": eval_every,
         # "sweep_subfolder": sweep_subfolder,
     }
 
@@ -170,6 +176,15 @@ def main(
         save_path=save_path,
         sweep_subfolder=sweep_subfolder,
         config_name=config_name,
+    )
+    wandb.init(
+        project="weak-to-strong",
+        config=config,
+        group=sweep_subfolder,
+        job_type="gt" if weak_labels_path is None else "w2s",
+        name=f"{model_size.split('/')[-1]}_{ds_name}_{loss}",
+        dir=results_folder,
+        reinit=True,
     )
 
     # Tokenize datasets

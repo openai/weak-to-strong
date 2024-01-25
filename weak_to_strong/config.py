@@ -54,6 +54,30 @@ MODEL_CONFIGS = [
         model_parallel=(per_device_ram < 35e9 and torch.cuda.device_count() > 1),
     ),
     ModelConfig(
+        name="EleutherAI/pythia-70m",
+        default_lr=1e-5,
+        eval_batch_size=32,
+        minibatch_size_per_device=32,  # this needs adjusting for GPU/dataset
+        model_parallel=False,
+        lora_modules=GPT_NEOX_LORA_MODULES,
+    ),
+    ModelConfig(
+        name="EleutherAI/pythia-14m",
+        default_lr=1e-5,
+        eval_batch_size=32,
+        minibatch_size_per_device=32,  # this needs adjusting for GPU/dataset
+        model_parallel=False,
+        lora_modules=GPT_NEOX_LORA_MODULES,
+    ),
+    ModelConfig(
+        name="EleutherAI/pythia-160m",
+        default_lr=1e-5,
+        eval_batch_size=32,
+        minibatch_size_per_device=32,  # this needs adjusting for GPU/dataset
+        model_parallel=False,
+        lora_modules=GPT_NEOX_LORA_MODULES,
+    ),
+    ModelConfig(
         name="EleutherAI/pythia-410m",
         default_lr=1e-5,
         eval_batch_size=32,
