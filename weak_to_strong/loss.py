@@ -32,6 +32,29 @@ class xent_loss(LossFnBase):
         """
         loss = torch.nn.functional.cross_entropy(logits, labels)
         return loss.mean()
+    
+
+# Custom loss function
+class kl_loss(LossFnBase):
+    def __call__(
+        self, logits: torch.Tensor, labels: torch.Tensor, step_frac: float
+    ) -> torch.Tensor:
+        """
+        This function calculates the KL divergence loss between logits and labels.
+        Note that this is an equivalent loss to cross entropy loss, but its minimum
+        is 0 instead of the average pointwise label entropy.
+
+        Parameters:
+        logits: The predicted values (log probabilities).
+        labels: The actual values (probabilities).
+        step_frac: The fraction of total training steps completed.
+
+        Returns:
+        The mean of the KL divergence loss.
+        """
+        logprobs = torch.log_softmax(logits, dim=-1)  # [batch, 2]
+        loss = torch.nn.functional.kl_div(logprobs, labels, log_target=False, reduction="batchmean")
+        return loss.mean()
 
 
 class product_loss_fn(LossFnBase):

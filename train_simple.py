@@ -24,7 +24,7 @@ def main(
     batch_size: int = 32,
     max_ctx: int = 1024,
     ds_name: str = "sciq",
-    loss: str = "xent",
+    loss: str = "kl",
     n_train1_docs: int = 20000,
     n_train2_docs: int = 10000,
     n_test_docs: int = 10000,

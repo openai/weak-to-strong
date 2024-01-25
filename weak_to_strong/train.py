@@ -15,7 +15,7 @@ import wandb
 import weak_to_strong.logger as logger
 from weak_to_strong.common import clear_mem, to_batch
 from weak_to_strong.eval import eval_model_acc
-from weak_to_strong.loss import xent_loss
+from weak_to_strong.loss import kl_loss
 from weak_to_strong.model import TransformerWithHead
 from weak_to_strong.config import ModelConfig
 
@@ -34,7 +34,7 @@ def train_model(
     ds: datasets.Dataset,
     batch_size: int,
     lr: float = 1e-5,
-    loss_fn: Callable = xent_loss,
+    loss_fn: Callable = kl_loss,
     log_every: int = 400,
     eval_every: Optional[int] = None,
     eval_batch_size: int = 256,
@@ -222,7 +222,7 @@ def train_and_save_model(
     save_path: str,
     eval_batch_size: Optional[int] = None,
     minibatch_size_per_device: Optional[int] = None,
-    loss_fn: Callable = xent_loss,
+    loss_fn: Callable = kl_loss,
     force_retrain: bool = False,
     train_with_dropout: bool = False,
     linear_probe: bool = False,
@@ -331,9 +331,9 @@ def train_and_save_model(
     inference_results = None
     if inference_ds:
         inference_results = eval_model_acc(model, inference_ds, eval_batch_size)
-        logger.logkv(
-            "inference_accuracy", np.mean([r["acc"] for r in inference_results])  # type: ignore
-        )
+        inf_acc = np.mean([r["acc"] for r in inference_results])
+        logger.logkv("inference_accuracy", inf_acc)
+        wandb.log({"inference/accuracy": inf_acc})
 
     if save_path:
         with open(os.path.join(save_path, "results.pkl"), "wb") as f:
@@ -346,7 +346,7 @@ def train_and_save_model(
                         np.mean(
                             [r["acc"] for r in inference_results]  # type: ignore
                             if inference_results
-                            else []
+                            else [np.nan]
                         )
                     ),
                     "test_results": test_results,

@@ -2,7 +2,7 @@ import torch
 from dataclasses import dataclass
 from typing import Optional
 
-from weak_to_strong.loss import logconf_loss_fn, product_loss_fn, xent_loss
+from weak_to_strong.loss import logconf_loss_fn, product_loss_fn, xent_loss, kl_loss
 
 
 @dataclass
@@ -195,6 +195,7 @@ loss_dict = {
     "logconf": logconf_loss_fn(),
     "product": product_loss_fn(),
     "xent": xent_loss(),
+    "kl": kl_loss(),
 }
 
 VALID_LOSSES: list[str] = list(loss_dict.keys())
