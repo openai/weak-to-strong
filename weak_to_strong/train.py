@@ -19,13 +19,23 @@ from weak_to_strong.model import TransformerWithHead
 from weak_to_strong.config import ModelConfig
 
 
+def save(model: torch.nn.Module, save_path: str):
+    # Note: If the model is wrapped by DataParallel, we need to unwrap it before saving
+    model_to_save = model.module if hasattr(model, "module") else model
+    model_to_save.save_pretrained(save_path)
+    print("saved HF", save_path)
+    # save torch module
+    model_to_save.save_torch(os.path.join(save_path, "pytorch_model.bin"))
+    print("saved torch weights", os.path.join(save_path, "pytorch_model.bin"))
+
+
 def train_model(
     model: torch.nn.Module,
     ds: datasets.Dataset,
     batch_size: int,
     lr: float = 1e-5,
     loss_fn: Callable = xent_loss,
-    log_every: int = 100,
+    log_every: int = 400,
     eval_every: Optional[int] = None,
     eval_batch_size: int = 256,
     minibatch_size: int = 8,
@@ -42,6 +52,7 @@ def train_model(
     - input_ids: a list of token ids
     - soft_label: a list of soft label probabilities
     """
+
     print("LR", lr, "batch_size", batch_size, "minibatch_size", minibatch_size)
     assert (
         batch_size % minibatch_size == 0
@@ -102,10 +113,7 @@ def train_model(
                 ), "must provide eval_ds if eval_every is not None"
                 eval_results = eval_model_acc(model, eval_ds, eval_batch_size)
                 if save_path:
-                    (
-                        model if hasattr(model, "save_pretrained") else model.module
-                    ).save_pretrained(save_path)
-                    print("saved", save_path)
+                    save(model, save_path)
                 if gradient_checkpointing:
                     (
                         model
@@ -197,11 +205,7 @@ def train_model(
         )  # type: ignore
         logger.dumpkvs()
     if save_path:
-        # Note: If the model is wrapped by DataParallel, we need to unwrap it before saving
-        (model if hasattr(model, "save_pretrained") else model.module).save_pretrained(
-            save_path
-        )
-        print("saved", save_path)
+        save(model, save_path)
     return final_eval_results
 
 
@@ -321,12 +325,7 @@ def train_and_save_model(
             optimizer_name=optimizer_name,
         )
         print("Model training took", time.time() - start, "seconds")
-        if save_path:
-            # Note: If the model is wrapped by DataParallel, we need to unwrap it before saving
-            (
-                model if hasattr(model, "save_pretrained") else model.module
-            ).save_pretrained(save_path)
-            print("saved", save_path)
+            
 
     inference_results = None
     if inference_ds:

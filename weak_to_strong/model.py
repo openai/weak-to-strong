@@ -74,6 +74,9 @@ class TransformerWithHead(PreTrainedModel):
     @classmethod
     def from_pretrained(cls, name, **kwargs):
         return cls(name, **kwargs)
+    
+    def save_torch(self, path):
+        torch.save(self.state_dict(), path)
 
     def gradient_checkpointing_enable(self):
         model = self.transformer if self.score is not None else self.lm
