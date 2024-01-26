@@ -61,8 +61,9 @@ def main(
     model_config = MODELS_DICT[model_size]
 
     is_w2s = weak_labels_path is not None or weak_model_size is not None
-    strong_eval_every = strong_eval_every if is_w2s else 10000000
+    eval_every = strong_eval_every if is_w2s else 10000000
     epochs = strong_epochs if is_w2s else weak_epochs
+    loss = loss if is_w2s else "xent"
 
     # this is per device!
     if minibatch_size_per_device is None:
@@ -100,7 +101,7 @@ def main(
         # "results_folder": results_folder,
         "linear_probe": linear_probe,
         "lr_schedule": lr_schedule,
-        "eval_every": strong_eval_every,
+        "strong_eval_every": strong_eval_every,
         # "sweep_subfolder": sweep_subfolder,
     }
 
@@ -108,6 +109,7 @@ def main(
         weak_model_config = config.copy()
         weak_model_config["model_size"] = weak_model_size
         weak_model_config["loss"] = "kl"
+        del weak_model_config["strong_epochs"]
         weak_model_config["weak_epochs"] = weak_epochs
         if use_default_lr:
             weak_model_config["lr"] = MODELS_DICT[weak_model_size].default_lr
@@ -214,7 +216,7 @@ def main(
         linear_probe=linear_probe,
         lr_schedule=lr_schedule,
         optimizer_name=optim,
-        eval_every=strong_eval_every,
+        eval_every=eval_every,
     )
 
     if weak_ds is not None:
