@@ -49,7 +49,7 @@ def main(
     sweep_subfolder: str = "default",
     # Set to a very large value so that by default we don't do any intermediate evals but
     # still do final evals (which requires eval_every to be set to a non-zero, non-None value)
-    eval_every: int = 10000000,
+    strong_eval_every: int = 10000000,
     sync_command: Optional[str] = None,
 ):  
     assert (
@@ -60,9 +60,9 @@ def main(
     ), "Can't pass both weak_model_size and weak_labels_path"
     model_config = MODELS_DICT[model_size]
 
-    # only evaluate intermediately for the student
-    eval_every = eval_every if weak_labels_path is not None else 10000000
-    epochs = strong_epochs if weak_labels_path is not None else weak_epochs
+    is_w2s = weak_labels_path is not None or weak_model_size is not None
+    strong_eval_every = strong_eval_every if is_w2s else 10000000
+    epochs = strong_epochs if is_w2s else weak_epochs
 
     # this is per device!
     if minibatch_size_per_device is None:
@@ -92,7 +92,7 @@ def main(
         "model_size": model_size,
         "lr": lr,
         "optim": optim,
-        ("strong_epochs" if weak_labels_path is not None else "weak_epochs"): epochs,
+        ("strong_epochs" if is_w2s else "weak_epochs"): epochs,
         # "force_retrain": force_retrain,
         "seed": seed,
         # "minibatch_size_per_device": minibatch_size_per_device,
@@ -100,7 +100,7 @@ def main(
         # "results_folder": results_folder,
         "linear_probe": linear_probe,
         "lr_schedule": lr_schedule,
-        "eval_every": eval_every,
+        "eval_every": strong_eval_every,
         # "sweep_subfolder": sweep_subfolder,
     }
 
@@ -213,7 +213,7 @@ def main(
         linear_probe=linear_probe,
         lr_schedule=lr_schedule,
         optimizer_name=optim,
-        eval_every=eval_every,
+        eval_every=strong_eval_every,
     )
 
     if weak_ds is not None:

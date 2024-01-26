@@ -16,10 +16,6 @@ def main(
         and "model_size" not in kwargs
         and "weak_labels_path" not in kwargs
     ), "Need to use model_sizes when using sweep.py"
-    basic_args = [
-        sys.executable,
-        os.path.join(os.path.dirname(__file__), "train_simple.py"),
-    ]
 
     print("Running ground truth models")
     model_sizes_to_run = model_sizes if train_self_to_self else model_sizes[:-1]
