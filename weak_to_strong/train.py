@@ -19,14 +19,14 @@ from weak_to_strong.loss import kl_loss
 from weak_to_strong.model import TransformerWithHead
 from weak_to_strong.config import ModelConfig
 
+
 def save(model: torch.nn.Module, save_path: str, optimizer=None, scheduler=None):
     # Note: If the model is wrapped by DataParallel, we need to unwrap it before saving
     model_to_save = model.module if hasattr(model, "module") else model
-    # model_to_save.save_pretrained(save_path)
-    # print("saved HF", save_path)
-    # save torch module
-    model_to_save.save_torch(os.path.join(save_path, "pytorch_model.bin"), optimizer, scheduler)
-    print("saved torch weights", os.path.join(save_path, "pytorch_model.bin"))
+
+    save_file = os.path.join(save_path, "pytorch_model.bin")
+    model_to_save.save_torch(save_file, optimizer, scheduler)
+    print("saved torch weights", save_file)
 
 
 def train_model(

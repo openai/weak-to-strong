@@ -21,23 +21,27 @@ from weak_to_strong.train import train_and_save_model
 
 
 def main(
+    # training batch size (number of examples per update)
     batch_size: int = 32,
     max_ctx: int = 1024,
     ds_name: str = "sciq",
     loss: str = "kl",
+    # number of documents
     n_train1_docs: int = 20000,
     n_train2_docs: int = 10000,
     n_test_docs: int = 10000,
     model_size: str = "gpt2",
     lr: Optional[float] = None,
     optim: Optional[str] = None,
-    weak_epochs: int = 1,
-    strong_epochs: int = 1,
+    gt_epochs: int = 1,
+    w2s_epochs: int = 1,
     force_retrain: bool = False,
     seed: int = 0,
+    # number of examples per forward pass per device
     minibatch_size_per_device: Optional[int] = None,
     train_with_dropout: bool = False,
     results_folder: str = "/tmp/results",
+    # if True, keep the transformer weights frozen and only train the head
     linear_probe: bool = False,
     lr_schedule: str = "cosine_anneal",
     # Note: you can pass either weak_model_size or weak_labels_path. If you pass
@@ -46,10 +50,13 @@ def main(
     # If you pass neither, we will train on ground truth.
     weak_model_size: Optional[str] = None,
     weak_labels_path: Optional[str] = None,
+    # The subfolder in results_folder to save the results to
     sweep_subfolder: str = "default",
     # Set to a very large value so that by default we don't do any intermediate evals but
-    # still do final evals (which requires eval_every to be set to a non-zero, non-None value)
-    strong_eval_every: int = 10000000,
+    # still do final evals (which requires eval_every to be set to a non-zero, non-None value).
+    # Grount-truth fine-tuning does not do any intermediate evals.
+    w2s_eval_every: int = 10000000,
+    # If set, this command will be run to sync the results to remote storage
     sync_command: Optional[str] = None,
 ):  
     assert (
@@ -61,8 +68,8 @@ def main(
     model_config = MODELS_DICT[model_size]
 
     is_w2s = weak_labels_path is not None or weak_model_size is not None
-    eval_every = strong_eval_every if is_w2s else 10000000
-    epochs = strong_epochs if is_w2s else weak_epochs
+    eval_every = w2s_eval_every if is_w2s else 10000000
+    epochs = w2s_epochs if is_w2s else gt_epochs
     loss = loss if is_w2s else "xent"
 
     # this is per device!
@@ -93,7 +100,7 @@ def main(
         "model_size": model_size,
         "lr": lr,
         "optim": optim,
-        ("strong_epochs" if is_w2s else "weak_epochs"): epochs,
+        ("w2s_epochs" if is_w2s else "gt_epochs"): epochs,
         # "force_retrain": force_retrain,
         "seed": seed,
         # "minibatch_size_per_device": minibatch_size_per_device,
@@ -104,15 +111,15 @@ def main(
         # "sweep_subfolder": sweep_subfolder,
     }
     if is_w2s:
-        config["strong_eval_every"] = strong_eval_every
+        config["strong_eval_every"] = w2s_eval_every
 
     if weak_model_size is not None:
         weak_model_config = config.copy()
         weak_model_config["model_size"] = weak_model_size
         weak_model_config["loss"] = "xent"
-        del weak_model_config["strong_epochs"]
+        del weak_model_config["w2s_epochs"]
         del weak_model_config["strong_eval_every"]
-        weak_model_config["weak_epochs"] = weak_epochs
+        weak_model_config["gt_epochs"] = gt_epochs
         if use_default_lr:
             weak_model_config["lr"] = MODELS_DICT[weak_model_size].default_lr
 
