@@ -108,7 +108,7 @@ def main(
     if weak_model_size is not None:
         weak_model_config = config.copy()
         weak_model_config["model_size"] = weak_model_size
-        weak_model_config["loss"] = "kl"
+        weak_model_config["loss"] = "xent"
         del weak_model_config["strong_epochs"]
         weak_model_config["weak_epochs"] = weak_epochs
         if use_default_lr:
