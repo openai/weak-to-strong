@@ -101,15 +101,17 @@ def main(
         # "results_folder": results_folder,
         "linear_probe": linear_probe,
         "lr_schedule": lr_schedule,
-        "strong_eval_every": strong_eval_every,
         # "sweep_subfolder": sweep_subfolder,
     }
+    if is_w2s:
+        config["strong_eval_every"] = strong_eval_every
 
     if weak_model_size is not None:
         weak_model_config = config.copy()
         weak_model_config["model_size"] = weak_model_size
         weak_model_config["loss"] = "xent"
         del weak_model_config["strong_epochs"]
+        del weak_model_config["strong_eval_every"]
         weak_model_config["weak_epochs"] = weak_epochs
         if use_default_lr:
             weak_model_config["lr"] = MODELS_DICT[weak_model_size].default_lr
@@ -141,7 +143,7 @@ def main(
 
     if weak_labels_path is None:  # train on ground truth
         # split off half for getting weak labels
-        split_data = train_dataset.train_test_split(test_size=n_train2_docs)
+        split_data = train_dataset.train_test_split(test_size=n_train2_docs, seed=seed)
         train1_ds, train2_ds = split_data["train"], split_data["test"]
         print("len(train1):", len(train1_ds), "len(train2):", len(train2_ds))
         config_name = get_config_foldername(config)
