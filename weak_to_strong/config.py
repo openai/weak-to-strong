@@ -70,7 +70,7 @@ MODEL_CONFIGS = [
         lora_modules=GPT_NEOX_LORA_MODULES,
     ),
     ModelConfig(
-        name="EleutherAI/pythia-160m",
+        name="EleutherAI/pythia-160m-v0",
         default_lr=1e-5,
         eval_batch_size=32,
         minibatch_size_per_device=32,  # this needs adjusting for GPU/dataset
