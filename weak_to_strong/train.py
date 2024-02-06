@@ -10,13 +10,23 @@ import torch_optimizer as toptim
 from transformers.modeling_utils import load_sharded_checkpoint
 from sklearn.metrics import roc_auc_score
 from transformers import get_linear_schedule_with_warmup
+import wandb
 
 import weak_to_strong.logger as logger
 from weak_to_strong.common import clear_mem, to_batch
 from weak_to_strong.eval import eval_model_acc
-from weak_to_strong.loss import xent_loss
+from weak_to_strong.loss import kl_loss
 from weak_to_strong.model import TransformerWithHead
 from weak_to_strong.config import ModelConfig
+
+
+def save(model: torch.nn.Module, save_path: str, optimizer=None, scheduler=None):
+    # Note: If the model is wrapped by DataParallel, we need to unwrap it before saving
+    model_to_save = model.module if hasattr(model, "module") else model
+
+    save_file = os.path.join(save_path, "pytorch_model.bin")
+    model_to_save.save_torch(save_file, optimizer, scheduler)
+    print("saved torch weights", save_file)
 
 
 def train_model(
@@ -24,8 +34,8 @@ def train_model(
     ds: datasets.Dataset,
     batch_size: int,
     lr: float = 1e-5,
-    loss_fn: Callable = xent_loss,
-    log_every: int = 10,
+    loss_fn: Callable = kl_loss,
+    log_every: int = 400,
     eval_every: Optional[int] = None,
     eval_batch_size: int = 256,
     minibatch_size: int = 8,
@@ -33,6 +43,7 @@ def train_model(
     gradient_checkpointing: bool = False,
     train_with_dropout: bool = False,
     epochs: int = 1,
+    save_path: Optional[str] = None,
     lr_schedule: str = "cosine_anneal",
     optimizer_name: str = "adam",
 ):
@@ -41,6 +52,7 @@ def train_model(
     - input_ids: a list of token ids
     - soft_label: a list of soft label probabilities
     """
+
     print("LR", lr, "batch_size", batch_size, "minibatch_size", minibatch_size)
     assert (
         batch_size % minibatch_size == 0
@@ -100,6 +112,8 @@ def train_model(
                     eval_ds is not None
                 ), "must provide eval_ds if eval_every is not None"
                 eval_results = eval_model_acc(model, eval_ds, eval_batch_size)
+                if save_path:
+                    save(model, save_path, optimizer, lr_scheduler)
                 if gradient_checkpointing:
                     (
                         model
@@ -108,9 +122,10 @@ def train_model(
                     ).gradient_checkpointing_enable()
                 if train_with_dropout:
                     model.train()
-                eval_accs = np.mean([r["acc"] for r in eval_results])  # type: ignore
-                eval_acc_dict[step] = eval_accs
-                logger.logkv("eval_accuracy", eval_accs)
+                eval_acc = np.mean([r["acc"] for r in eval_results])  # type: ignore
+                eval_acc_dict[step] = eval_acc
+                logger.logkv("eval_accuracy", eval_acc)
+                wandb.log({"eval/accuracy": eval_acc})
             all_logits = []
             all_labels = []
             for mbatch in to_batch(
@@ -150,20 +165,21 @@ def train_model(
 
             try:
                 auroc = roc_auc_score(all_hard_labels.cpu(), all_logprobs.cpu())
-            except ValueError:
+            except ValueError as e:
+                print(f"Warning: {e}")
                 auroc = np.nan
             aurocs.append(auroc)
 
-            logger.logkvs(
-                {
+            log_dict = {
                     "step": step,
                     "progress": step / nsteps,
                     "loss": loss_tot,
                     "train_accuracy": accuracies[-1],
                     "train_auroc": aurocs[-1],
                     "lr": lr_scheduler.get_last_lr()[0],
-                }
-            )
+            }
+            logger.logkvs(log_dict)
+            wandb.log(log_dict)
             optimizer.step()
             optimizer.zero_grad()
             lr_scheduler.step()
@@ -185,10 +201,12 @@ def train_model(
         print("Final evaluation:")
         assert eval_ds is not None, "must provide eval_ds if eval_every is not None"
         final_eval_results = eval_model_acc(model, eval_ds, eval_batch_size)
-        logger.logkv(
-            "eval_accuracy", np.mean([r["acc"] for r in final_eval_results])  # type: ignore
-        )  # type: ignore
+        eval_acc = np.mean([r["acc"] for r in final_eval_results])
+        logger.logkv("eval_accuracy", eval_acc)
+        wandb.log({"eval/accuracy": eval_acc})
         logger.dumpkvs()
+    if save_path:
+        save(model, save_path, optimizer, lr_scheduler)
     return final_eval_results
 
 
@@ -204,7 +222,7 @@ def train_and_save_model(
     save_path: str,
     eval_batch_size: Optional[int] = None,
     minibatch_size_per_device: Optional[int] = None,
-    loss_fn: Callable = xent_loss,
+    loss_fn: Callable = kl_loss,
     force_retrain: bool = False,
     train_with_dropout: bool = False,
     linear_probe: bool = False,
@@ -268,8 +286,8 @@ def train_and_save_model(
             linear_probe=linear_probe,
             **custom_kwargs,
         ).to(
-            "cuda"
-        )  # type: ignore
+            "cuda"  # type: ignore
+        )
         already_trained = maybe_load_model(model)
         # data parallel:  currently not supported with model parallel
         if torch.cuda.device_count() > 1:
@@ -296,6 +314,7 @@ def train_and_save_model(
             batch_size,
             lr=lr,
             epochs=epochs,
+            save_path=save_path,
             eval_ds=test_ds,
             gradient_checkpointing=gradient_checkpointing,
             loss_fn=loss_fn,
@@ -307,19 +326,14 @@ def train_and_save_model(
             optimizer_name=optimizer_name,
         )
         print("Model training took", time.time() - start, "seconds")
-        if save_path:
-            # Note: If the model is wrapped by DataParallel, we need to unwrap it before saving
-            (
-                model if hasattr(model, "save_pretrained") else model.module
-            ).save_pretrained(save_path)
-            print("saved", save_path)
+            
 
     inference_results = None
     if inference_ds:
         inference_results = eval_model_acc(model, inference_ds, eval_batch_size)
-        logger.logkv(
-            "inference_accuracy", np.mean([r["acc"] for r in inference_results])  # type: ignore
-        )
+        inf_acc = np.mean([r["acc"] for r in inference_results])
+        logger.logkv("inference_accuracy", inf_acc)
+        wandb.log({"inference/accuracy": inf_acc})
 
     if save_path:
         with open(os.path.join(save_path, "results.pkl"), "wb") as f:
@@ -332,7 +346,7 @@ def train_and_save_model(
                         np.mean(
                             [r["acc"] for r in inference_results]  # type: ignore
                             if inference_results
-                            else []
+                            else [np.nan]
                         )
                     ),
                     "test_results": test_results,
@@ -343,5 +357,6 @@ def train_and_save_model(
     # try to clean up memory
     clear_mem()
     logger.shutdown()
+    wandb.finish()
 
     return test_results, inference_results

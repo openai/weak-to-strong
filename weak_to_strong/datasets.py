@@ -5,6 +5,9 @@ from typing import Any, Callable, Optional
 
 from datasets import Dataset as HfDataset
 from datasets import load_dataset as hf_load_dataset
+from datasets import concatenate_datasets
+
+from collections import Counter
 
 
 @dataclass
@@ -24,6 +27,21 @@ def register_dataset(name: str, config: DatasetConfig):
     _REGISTRY[name] = config
 
 
+def balance(ds: HfDataset, seed: int):
+    """Undersample balance to 50/50"""
+
+    label_counts = Counter(ds["hard_label"])
+    assert len(label_counts) == 2, "Dataset must be binary"
+    
+    # undersample the majority class
+    majority_label = max(label_counts, key=lambda k: label_counts[k])
+    minority_label = 1 - majority_label
+    minority_count = label_counts[minority_label]
+    minority_ds = ds.filter(lambda ex: ex["hard_label"] == minority_label)
+    majority_ds = ds.filter(lambda ex: ex["hard_label"] == majority_label).shuffle(seed=seed).select(range(minority_count))
+    return concatenate_datasets([minority_ds, majority_ds]).shuffle(seed=seed)
+
+
 def load_and_process_dataset(ds_name: str, seed: int = 0, split_sizes: Optional[dict] = None):
     if split_sizes is None:
         split_sizes = dict(train=None, test=None)
@@ -38,7 +56,7 @@ def load_and_process_dataset(ds_name: str, seed: int = 0, split_sizes: Optional[
             ds = ds.select(range(n_docs))
         except IndexError as e:
             print(f"Warning {ds_name} has less than {n_docs} docs, using all {len(ds)}")
-        ds = ds.map(functools.partial(cfg.formatter, rng=Random(seed)))  # type: ignore
+        ds = balance(ds.map(functools.partial(cfg.formatter, rng=Random(seed))), seed)  # type: ignore
         ds = ds.map(
             lambda ex: {
                 "soft_label": [1 - float(ex["hard_label"]), float(ex["hard_label"])]
@@ -117,6 +135,18 @@ def hf_loader(*hf_name, split_names=None):
 ##########
 
 
+def format_mc_taco(ex, rng):
+    template = "{sentence}\n\nGiven the above, {question} Is the answer {answer}?"
+    return dict(txt=template.format(**ex), hard_label=ex["label"])
+
+register_dataset(
+    "mc_taco",
+    DatasetConfig(  # we switch train and test bc test is bigger
+        loader=hf_loader("mc_taco", split_names=dict(train="test", test="validation")),  # type: ignore
+        formatter=format_mc_taco,  # type: ignore
+    ),
+)
+
 def format_amazon_polarity(ex, rng):
     return dict(txt=f"{ex['title']} {ex['content']}", hard_label=ex["label"])
 
@@ -126,7 +156,7 @@ register_dataset(
     DatasetConfig(
         loader=hf_loader("amazon_polarity"),  # type: ignore
         formatter=format_amazon_polarity,  # type: ignore
-    ),  # type: ignore
+    ),
 )
 
 
@@ -209,7 +239,7 @@ register_dataset(
     DatasetConfig(
         loader=hf_loader("Anthropic/hh-rlhf"),  # type: ignore
         formatter=format_anthropic_hh,  # type: ignore
-    ),  # type: ignore
+    ),
 )
 
 

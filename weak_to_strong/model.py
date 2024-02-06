@@ -74,6 +74,14 @@ class TransformerWithHead(PreTrainedModel):
     @classmethod
     def from_pretrained(cls, name, **kwargs):
         return cls(name, **kwargs)
+    
+    def save_torch(self, path, optimizer=None, scheduler=None):
+        save_dict = self.state_dict()
+        if optimizer is not None:
+            save_dict["optimizer"] = optimizer.state_dict()
+        if scheduler is not None:
+            save_dict["scheduler"] = scheduler.state_dict()
+        torch.save(save_dict, path)
 
     def gradient_checkpointing_enable(self):
         model = self.transformer if self.score is not None else self.lm

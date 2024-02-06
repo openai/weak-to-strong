@@ -2,7 +2,7 @@ import torch
 from dataclasses import dataclass
 from typing import Optional
 
-from weak_to_strong.loss import logconf_loss_fn, product_loss_fn, xent_loss
+from weak_to_strong.loss import logconf_loss_fn, product_loss_fn, xent_loss, kl_loss
 
 
 @dataclass
@@ -54,6 +54,30 @@ MODEL_CONFIGS = [
         model_parallel=(per_device_ram < 35e9 and torch.cuda.device_count() > 1),
     ),
     ModelConfig(
+        name="EleutherAI/pythia-70m",
+        default_lr=1e-5,
+        eval_batch_size=32,
+        minibatch_size_per_device=32,  # this needs adjusting for GPU/dataset
+        model_parallel=False,
+        lora_modules=GPT_NEOX_LORA_MODULES,
+    ),
+    ModelConfig(
+        name="EleutherAI/pythia-14m",
+        default_lr=1e-5,
+        eval_batch_size=32,
+        minibatch_size_per_device=32,  # this needs adjusting for GPU/dataset
+        model_parallel=False,
+        lora_modules=GPT_NEOX_LORA_MODULES,
+    ),
+    ModelConfig(
+        name="EleutherAI/pythia-160m-v0",
+        default_lr=1e-5,
+        eval_batch_size=32,
+        minibatch_size_per_device=32,  # this needs adjusting for GPU/dataset
+        model_parallel=False,
+        lora_modules=GPT_NEOX_LORA_MODULES,
+    ),
+    ModelConfig(
         name="EleutherAI/pythia-410m",
         default_lr=1e-5,
         eval_batch_size=32,
@@ -68,6 +92,19 @@ MODEL_CONFIGS = [
         minibatch_size_per_device=2,  # this needs adjusting for GPU/dataset
         model_parallel=False,
         lora_modules=GPT_NEOX_LORA_MODULES,
+    ),
+    ModelConfig(
+        name="EleutherAI/pythia-12b",
+        default_lr=1e-5,
+        eval_batch_size=32,
+        minibatch_size_per_device=2,  # this needs adjusting for GPU/dataset
+        model_parallel=False,
+        lora_modules=GPT_NEOX_LORA_MODULES,
+        custom_kwargs={
+            "torch_dtype": torch.bfloat16
+            if torch.cuda.is_bf16_supported()
+            else torch.float32  # we can only do this because we're using LoRA
+        },
     ),
     ModelConfig(
         name="mistralai/Mistral-7B-v0.1",
@@ -85,7 +122,7 @@ MODEL_CONFIGS = [
         gradient_checkpointing=True,
         model_parallel=False,
         custom_kwargs={
-            "torch_dtype": torch.bfloat16
+            "torch_dtype": torch.bfloat16  # we can only do this because we're using LoRA
             if torch.cuda.is_bf16_supported()
             else torch.float32,
         },
@@ -158,6 +195,7 @@ loss_dict = {
     "logconf": logconf_loss_fn(),
     "product": product_loss_fn(),
     "xent": xent_loss(),
+    "kl": kl_loss(),
 }
 
 VALID_LOSSES: list[str] = list(loss_dict.keys())

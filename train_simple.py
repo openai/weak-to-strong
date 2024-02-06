@@ -7,6 +7,7 @@ from typing import Optional
 import fire
 import numpy as np
 from datasets import load_from_disk
+import wandb
 
 import weak_to_strong.logger as logger
 from weak_to_strong.common import get_tokenizer
@@ -20,21 +21,27 @@ from weak_to_strong.train import train_and_save_model
 
 
 def main(
+    # training batch size (number of examples per update)
     batch_size: int = 32,
     max_ctx: int = 1024,
     ds_name: str = "sciq",
-    loss: str = "xent",
-    n_docs: int = 20000,
+    loss: str = "kl",
+    # number of documents
+    n_train1_docs: int = 20000,
+    n_train2_docs: int = 10000,
     n_test_docs: int = 10000,
     model_size: str = "gpt2",
     lr: Optional[float] = None,
     optim: Optional[str] = None,
-    epochs: int = 2,
+    gt_epochs: int = 1,
+    w2s_epochs: int = 1,
     force_retrain: bool = False,
     seed: int = 0,
+    # number of examples per forward pass per device
     minibatch_size_per_device: Optional[int] = None,
     train_with_dropout: bool = False,
     results_folder: str = "/tmp/results",
+    # if True, keep the transformer weights frozen and only train the head
     linear_probe: bool = False,
     lr_schedule: str = "cosine_anneal",
     # Note: you can pass either weak_model_size or weak_labels_path. If you pass
@@ -43,12 +50,15 @@ def main(
     # If you pass neither, we will train on ground truth.
     weak_model_size: Optional[str] = None,
     weak_labels_path: Optional[str] = None,
+    # The subfolder in results_folder to save the results to
     sweep_subfolder: str = "default",
     # Set to a very large value so that by default we don't do any intermediate evals but
-    # still do final evals (which requires eval_every to be set to a non-zero, non-None value)
-    eval_every: int = 1000000,
+    # still do final evals (which requires eval_every to be set to a non-zero, non-None value).
+    # Grount-truth fine-tuning does not do any intermediate evals.
+    w2s_eval_every: int = 10000000,
+    # If set, this command will be run to sync the results to remote storage
     sync_command: Optional[str] = None,
-):
+):  
     assert (
         ds_name in VALID_DATASETS
     ), f"Unknown dataset {ds_name} not in {VALID_DATASETS}"
@@ -56,6 +66,11 @@ def main(
         weak_model_size is None or weak_labels_path is None
     ), "Can't pass both weak_model_size and weak_labels_path"
     model_config = MODELS_DICT[model_size]
+
+    is_w2s = weak_labels_path is not None or weak_model_size is not None
+    eval_every = w2s_eval_every if is_w2s else 10000000
+    epochs = w2s_epochs if is_w2s else gt_epochs
+    loss = loss if is_w2s else "xent"
 
     # this is per device!
     if minibatch_size_per_device is None:
@@ -79,12 +94,13 @@ def main(
         "max_ctx": max_ctx,
         "ds_name": ds_name,
         "loss": loss,
-        "n_docs": n_docs,
+        "n_train1_docs": n_train1_docs,
+        "n_train2_docs": n_train2_docs,
         "n_test_docs": n_test_docs,
         "model_size": model_size,
         "lr": lr,
         "optim": optim,
-        "epochs": epochs,
+        ("w2s_epochs" if is_w2s else "gt_epochs"): epochs,
         # "force_retrain": force_retrain,
         "seed": seed,
         # "minibatch_size_per_device": minibatch_size_per_device,
@@ -92,14 +108,18 @@ def main(
         # "results_folder": results_folder,
         "linear_probe": linear_probe,
         "lr_schedule": lr_schedule,
-        "eval_every": eval_every,
         # "sweep_subfolder": sweep_subfolder,
     }
+    if is_w2s:
+        config["strong_eval_every"] = w2s_eval_every
 
     if weak_model_size is not None:
         weak_model_config = config.copy()
         weak_model_config["model_size"] = weak_model_size
         weak_model_config["loss"] = "xent"
+        del weak_model_config["w2s_epochs"]
+        del weak_model_config["strong_eval_every"]
+        weak_model_config["gt_epochs"] = gt_epochs
         if use_default_lr:
             weak_model_config["lr"] = MODELS_DICT[weak_model_size].default_lr
 
@@ -120,7 +140,9 @@ def main(
     print("DS NAME:", ds_name)
     # Load dataset
     dataset = load_and_process_dataset(
-        ds_name, seed=seed, split_sizes=dict(train=n_docs, test=n_test_docs)
+        ds_name,
+        seed=seed,
+        split_sizes=dict(train=n_train1_docs + n_train2_docs, test=n_test_docs),
     )
 
     # Split the training dataset in half
@@ -128,7 +150,7 @@ def main(
 
     if weak_labels_path is None:  # train on ground truth
         # split off half for getting weak labels
-        split_data = train_dataset.train_test_split(test_size=0.5, seed=seed)  # type: ignore
+        split_data = train_dataset.train_test_split(test_size=n_train2_docs, seed=seed)
         train1_ds, train2_ds = split_data["train"], split_data["test"]
         print("len(train1):", len(train1_ds), "len(train2):", len(train2_ds))
         config_name = get_config_foldername(config)
@@ -166,6 +188,15 @@ def main(
         save_path=save_path,
         sweep_subfolder=sweep_subfolder,
         config_name=config_name,
+    )
+    wandb.init(
+        project="weak-to-strong",
+        config=config,
+        group=sweep_subfolder,
+        job_type="gt" if weak_labels_path is None else "w2s",
+        name=f"{model_size.split('/')[-1]}_{ds_name}_{loss}",
+        dir=results_folder,
+        reinit=True,
     )
 
     # Tokenize datasets
