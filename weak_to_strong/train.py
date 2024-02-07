@@ -131,20 +131,33 @@ def train_model(
             for mbatch in to_batch(
                 ds, minibatch_size, start=start, end=start + batch_size
             ):
+                batch_len = len(mbatch)
+                # If this is the last batch and it's smaller than
+                # the minibatch_size...
+                if batch_len < minibatch_size:
+                    # Calculate number of padding examples needed
+                    padding_size = minibatch_size - batch_len
+                    # Create clone of the last example for padding
+                    padding_example = {key: torch.stack([val[-1]]*padding_size) for key, val in mbatch.items()}
+                    # Extend the mbatch with padding examples
+                    for key, val in padding_example.items():
+                        mbatch[key] = torch.cat((mbatch[key], val), dim=0)
                 input_ids = (
                     torch.nn.utils.rnn.pad_sequence(
-                        [torch.tensor(ids) for ids in mbatch["input_ids"]]  # type: ignore
+                        [torch.tensor(ids) for ids in mbatch["input_ids"]]
                     )
                     .transpose(0, 1)
-                    .to(io_device)  # type: ignore
+                    .to(io_device)
                 )
-                labels = torch.tensor(mbatch["soft_label"]).to(io_device)  # type: ignore
+                labels = torch.tensor(mbatch["soft_label"]).to(io_device)
                 logits = model(
                     input_ids, choice_input_ids=mbatch.get("choice_input_ids")
                 )
 
-                all_logits.extend(logits.to(io_device))
-                all_labels.extend(labels)
+                # Ensure only the actual predictions and labels are extended,
+                # not the padded ones
+                all_logits.extend(logits[:batch_len].to(io_device))
+                all_labels.extend(labels[:batch_len])
             all_logits = torch.stack(all_logits)
             all_labels = torch.stack(all_labels)
             all_hard_labels = torch.argmax(all_labels, dim=1)
