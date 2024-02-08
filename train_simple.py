@@ -256,7 +256,7 @@ def main(
         train1_ds = load_from_disk(weak_labels_path)
         train2_ds = None
 
-        weak_model_config = json.load(open(weak_labels_path.replace("weak_labels", "config.json")))
+        weak_model_config = json.load(open(weak_labels_path.replace("weak_labels", "training_config.json")))
         config["weak_model_size"] = weak_model_config["model_size"]
         config_name = get_config_foldername(config)
         config["weak_model"] = weak_model_config
@@ -304,7 +304,7 @@ def main(
     res_dict = {"accuracy": acc}
     print("accuracy:", acc)
 
-    with open(os.path.join(save_path, f"config.json"), "w") as f:
+    with open(os.path.join(save_path, f"training_config.json"), "w") as f:
         json.dump(config, f, indent=2)
 
     with open(os.path.join(save_path, f"results_summary.json"), "w") as f:
