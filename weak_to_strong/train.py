@@ -208,6 +208,7 @@ def train_and_save_model(
                     for (k, v) in state_dict.items()
                 }
                 custom_kwargs["state_dict"] = state_dict
+                model.load_state_dict(state_dict)
             return True
         return False
 
