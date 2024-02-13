@@ -93,7 +93,7 @@ class logconf_loss_fn(LossFnBase):
     ) -> torch.Tensor:
         logits = logits.float()
         labels = labels.float()
-        coef = 1.0 if step_frac > self.warmup_frac else step_frac
+        coef = 1.0 if step_frac >= self.warmup_frac else (step_frac / self.warmup_frac)
         coef = coef * self.aux_coef
         preds = torch.softmax(logits, dim=-1)
         mean_weak = torch.mean(labels, dim=0)
